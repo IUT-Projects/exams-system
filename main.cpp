@@ -6,13 +6,7 @@ Include all required header & cpp files
 
 int main()
 {
-    Counter counter;
-    for (int index = 0; index < 10; index++)
-    {
-        counter.increment();
-        std::cout << counter;
-    }
-    Salam gopnik;
-    gopnik.saySalam();
+    cout << "YOPTA" << endl;
+
     return 0;
 }

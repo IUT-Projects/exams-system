@@ -1,5 +1,6 @@
-#include "basic.cpp"
-#include "salam.cpp"
+#include "users.cpp"
+#include "validators.cpp"
+#include "question.cpp"
 
 /*
 Create, implement many cpp files. And just write them in this file.
