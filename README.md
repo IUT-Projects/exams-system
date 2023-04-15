@@ -30,9 +30,9 @@ Steps
 Run by main.cpp
 
 ```shell
-g++ main.cpp -o program.o # compile
+g++ main.cpp -o program.o -std=c++20 # compile
 ./program.o # run executable file
-# one liner: g++ main.cpp -o program.o  && ./program.o
+# one liner: g++ main.cpp -o program.o -std=c++20 && ./program.o
 ```
 
 > WHY `.o` - it is standart. And if you see gitignore, here is a list of all file format that will not be uploaded to this github repository.
