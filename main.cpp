@@ -6,7 +6,7 @@ Include all required header & cpp files
 
 int main()
 {
-    cout << "YOPTA" << endl;
+    playMainMenu();
 
     return 0;
-}
+};
