@@ -72,8 +72,9 @@ public:
         */
         global_counter++;
     }
-    void execute()
+    void run()
     {
+        clear();
         cout << endl;
         fn();
         cout << endl;
@@ -106,7 +107,7 @@ bool optionExists(int user_option, vector<Option> main_options)
 
 void handleUserInput(int user_option, vector<Option> main_options, bool &isRunning);
 
-void playMainMenu()
+void runMainMenu()
 {
     int user_option;
     bool isRunning = true;
@@ -153,7 +154,7 @@ void handleUserInput(int user_option, vector<Option> main_options, bool &isRunni
         {
             if (option.getCounter() == user_option)
             {
-                option.execute();
+                option.run();
             }
         }
     }

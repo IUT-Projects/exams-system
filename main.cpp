@@ -6,7 +6,7 @@ Include all required header & cpp files
 
 int main()
 {
-    playMainMenu();
+    runMainMenu();
 
     return 0;
 };
