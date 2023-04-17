@@ -23,13 +23,6 @@ Also, there should be three roles:
 * Full access
 */
 
-enum roles
-{
-    TEACHER = 'teacher',
-    STUDENT = 'student',
-    ADMINISTRATOR = 'admin'
-};
-
 class User
 {
 private:

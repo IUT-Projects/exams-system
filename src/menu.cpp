@@ -36,7 +36,7 @@ void clear()
 }
 
 // creating kind of new type for functions (that returns void)
-typedef void (*function)();
+typedef void (*function_type)();
 
 // global counter for options
 int global_counter = 0;
@@ -46,10 +46,10 @@ class Option
 private:
     string name;
     int counter;
-    function fn;
+    function_type fn;
 
 public:
-    Option(string _name, function _fn) : name(_name), fn(_fn), counter(global_counter)
+    Option(string _name, function_type _fn) : name(_name), fn(_fn), counter(global_counter)
     {
         /*
         we have menu like this:
