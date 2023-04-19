@@ -14,7 +14,7 @@ Also, there should be three roles:
     Create and delete own exams
     Get list of students from exam results
 
-- Teacher
+- student
 * Can:
     Take exams
     See own results
