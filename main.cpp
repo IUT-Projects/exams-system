@@ -21,63 +21,11 @@ void clear()
     system("clear");
 #endif
 }
-
-class Option
-{
-private:
-    string name;
-    int counter;
-    function_type fn;
-
-public:
-    Option(string _name, function_type _fn) : name(_name), fn(_fn), counter(global_counter)
-    {
-        global_counter++;
-    }
-    void run()
-    {
-        clear();
-        cout << endl;
-        fn();
-        cout << endl;
-    }
-    int getCounter()
-    {
-        return this->counter;
-    }
-    friend void operator<<(ostream &os, Option _opt);
-};
-void operator<<(ostream &os, Option _opt)
-{
-    cout << " " << _opt.counter << " " << _opt.name << endl;
-}
-
-bool optionExists(int user_option, vector<Option> main_options)
-{
-    for (Option option : main_options)
-    {
-        if (option.getCounter() == user_option)
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
-// list of menu options
-vector<Option> main_options = {
-    Option(
-        "Quit", []
-        { cout << "Good bye!" << endl; exit(0); }),
-    Option(
-        "Say hello", []
-        { cout << "Hello world!"; })};
-
 /* QUESTIONS */
 
 class Question
 {
-private:
+protected:
     string question, answer, user_answer;
 
 public:
@@ -94,13 +42,14 @@ public:
     void setAnswer(string answer) { this->answer = answer; }
     void setUser_Answer(string user_answer) { this->user_answer = user_answer; }
 };
-class MultipleChoice : private Question
+class MultipleChoice : public Question
 {
 private:
-    vector<string> variants;
     int num_variants;
+    vector<string> variants;
 
 public:
+    MultipleChoice() : num_variants(3){};
     MultipleChoice(int num_variants)
     {
         this->num_variants = num_variants;
@@ -108,23 +57,33 @@ public:
 
     void setVariants()
     {
+        char variant = 'A'; // for A
+        string variant_option;
         cout << "Enter the variants" << endl;
-        for (int i = 0; i > num_variants; i++)
+        for (int i = 0; i < num_variants; i++)
         {
-            char variant = 'A';
-            cout << "Variant " << variant << ":";
-            cin >> variants[i];
+
+            cout << "Variant " << variant << ": ";
+            cin >> variant_option;
+            variants.push_back(variant_option);
             variant++;
         }
     }
-    void getVariants()
+    void showVariants()
     {
-        for (int i = 0; i > num_variants; i++)
+
+        char variant = 'A'; // for A
+        for (int i = 0; i < num_variants; i++)
         {
-            char variant = 'A';
-            cout << "Variant " << variant << ": " << variants[i] << endl;
+            cout << variant << ") " << variants[i] << endl;
             variant++;
         }
+    }
+
+    void display()
+    {
+        cout << this->question << endl;
+        showVariants();
     }
     void userAnswer(char answer)
     {
@@ -145,9 +104,22 @@ public:
     }
 };
 
-class QuestionSet
+void testAddQuestion()
 {
-};
+
+    MultipleChoice question(3);
+    question.setQuestion("integral from x^2");
+    question.setAnswer("x^3/3");
+    question.setVariants();
+    question.display();
+    cout << "Answer is " << question.getAnswer() << endl;
+}
+
+void quit()
+{
+    cout << "Good bye!" << endl;
+    exit(0);
+}
 
 int main()
 {
@@ -158,28 +130,26 @@ int main()
     {
         cout << endl
              << " [ MENU ] " << endl;
-        for (Option option : main_options)
-        {
-            cout << option;
-        }
+        cout << " 1. Add question" << endl;
+        cout << " 0. Quit" << endl;
 
         cout << "Your Option> ";
         cin >> user_option;
 
-        if (optionExists(user_option, main_options))
+        // clear();
+        switch (user_option)
         {
-            for (Option option : main_options)
-            {
-                if (option.getCounter() == user_option)
-                {
-                    option.run();
-                }
-            }
-        }
-        else
-        {
-            cout << "No matching option!" << endl;
+        case 1:
+            testAddQuestion();
+            break;
+        case 0:
+            quit();
             isRunning = false;
+            break;
+        default:
+            isRunning = false;
+            cout << "No Matching Option!" << endl;
+            break;
         }
     }
 
