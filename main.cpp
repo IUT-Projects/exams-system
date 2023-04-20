@@ -127,7 +127,7 @@ int main()
     {
         cout << endl
              << " [ MENU ] " << endl;
-        cout << " 1. Add question" << endl;
+        cout << " 1. Test add question" << endl;
         cout << " 0. Quit" << endl;
 
         cout << "Your Option> ";
