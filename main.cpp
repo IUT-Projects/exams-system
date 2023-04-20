@@ -1,13 +1,15 @@
 // imports
 #include <iostream>
 #include <vector>
+#include <sstream>
 #include <string>
 #include <stdexcept>
 
+#define DEFAULT_VARIANTS_NUMBER 3
+
 using namespace std;
 
-int global_counter = 0;
-typedef void (*function_type)();
+/* Utility functions */
 
 // for clearing terminal screen
 void clear()
@@ -21,10 +23,29 @@ void clear()
     system("clear");
 #endif
 }
+
+// for creating ID
+class User;
+string createID(User *object)
+{
+    // Takes object as an argument,
+    // function will get its memory address.
+    // converts it to string
+    // returns all contents from the 5th char (we dont need first chars like 0x)
+    // user id should be unique, and memory addr. also unique.
+    const void *address = static_cast<const void *>(object);
+    stringstream current_object_address;
+    current_object_address << address;
+    string ID = current_object_address.str();
+
+    return ID.substr(5, ID.size());
+}
+
 /* QUESTIONS */
 
 class Question
 {
+    // Base class for all questions
 protected:
     string question, answer, user_answer;
 
@@ -37,46 +58,49 @@ public:
     }
     string getQuestion() { return question; }
     string getAnswer() { return answer; }
-    string getUser_Answer() { return user_answer; }
+    string getUserAnswer() { return user_answer; }
     void setQuestion(string question) { this->question = question; }
     void setAnswer(string answer) { this->answer = answer; }
-    void setUser_Answer(string user_answer) { this->user_answer = user_answer; }
+    void setUserAnswer(string user_answer) { this->user_answer = user_answer; }
 };
+
+class WrittenQuestion : public Question
+{
+    // TODO implement written questions
+};
+
 class MultipleChoice : public Question
 {
 private:
-    int num_variants;
+    int variants_count;
     vector<string> variants;
 
 public:
-    MultipleChoice() : num_variants(3){};
-    MultipleChoice(int num_variants)
-    {
-        this->num_variants = num_variants;
-    }
+    MultipleChoice() : variants_count{DEFAULT_VARIANTS_NUMBER} {};
+    MultipleChoice(int _variants_count) : variants_count(_variants_count) {}
 
     void setVariants()
     {
-        char variant = 'A'; // for A
+        char option = 'A';
         string variant_option;
         cout << "Enter the variants" << endl;
-        for (int i = 0; i < num_variants; i++)
+        for (int i = 0; i < variants_count; i++)
         {
 
-            cout << "Variant " << variant << ": ";
+            cout << "Variant " << option << ": ";
             cin >> variant_option;
             variants.push_back(variant_option);
-            variant++;
+            option++;
         }
     }
     void showVariants()
     {
 
-        char variant = 'A'; // for A
-        for (int i = 0; i < num_variants; i++)
+        char option = 'A';
+        for (int i = 0; i < variants_count; i++)
         {
-            cout << variant << ") " << variants[i] << endl;
-            variant++;
+            cout << option << ") " << variants[i] << endl;
+            option++;
         }
     }
 
@@ -88,12 +112,12 @@ public:
     void userAnswer(char answer)
     {
         int user_answer = answer % 65;
-        setUser_Answer(variants[user_answer]);
+        setUserAnswer(variants[user_answer]);
     }
     bool checkAnswer(char answer)
     {
         int user_answer = answer % 65;
-        if (variants[user_answer] == getUser_Answer())
+        if (variants[user_answer] == getUserAnswer())
         {
             return true;
         }
@@ -101,15 +125,59 @@ public:
     }
 };
 
-void testAddQuestion()
+class Exam
 {
+    // TODO
+    // Implement exam class that contains info about
+    // users (who took)
+    // author
+    // questions
+};
 
-    MultipleChoice question(3);
-    question.setQuestion("integral from x^2");
-    question.setAnswer("x^3/3");
-    question.setVariants();
-    question.display();
-    cout << "Answer is " << question.getAnswer() << endl;
+/* USERS */
+
+string TEACHER = "teacher", STUDENT = "student", ADMIN = "admin";
+
+class User
+{
+private:
+    string name, role, ID;
+    int age;
+
+public:
+    User()
+    {
+        this->ID = createID(this);
+    };
+    void setData(string name, int age, string role)
+    {
+        this->age = age;
+        this->name = name;
+        this->role = role;
+    }
+    void display()
+    {
+        cout << "ID:" << ID << endl;
+        cout << "Name:" << name << endl;
+        cout << "Age:" << age << endl;
+        cout << "Role:" << role << endl;
+    }
+};
+// TODO implement functions that stores all user data in file
+// Implement user search from file
+
+
+void registerUser()
+{
+    User user1, user2;
+    string name, role;
+    int age;
+    cout << "Enter name, age and role: ";
+    cin >> name >> age >> role;
+    user1.setData(name, age, role);
+    user2.setData(name, age, role);
+    user1.display();
+    user2.display();
 }
 
 void quit()
@@ -125,9 +193,8 @@ int main()
 
     while (isRunning)
     {
-        cout << endl
-             << " [ MENU ] " << endl;
-        cout << " 1. Test add question" << endl;
+        cout << "\n[ MENU ] " << endl;
+        cout << " 1. Test user add" << endl;
         cout << " 0. Quit" << endl;
 
         cout << "Your Option> ";
@@ -137,7 +204,7 @@ int main()
         switch (user_option)
         {
         case 1:
-            testAddQuestion();
+            registerUser();
             break;
         case 0:
             quit();
