@@ -4,13 +4,23 @@
 #include <sstream>
 #include <string>
 #include <stdexcept>
-
+#include <cctype>
 #define DEFAULT_VARIANTS_NUMBER 3
 
 using namespace std;
 
 /* Utility functions */
-
+vector<string> split_word(string answer){
+vector<string> new_answer;
+        string word;
+        char space = ' ';
+        for(char c : answer){
+            if(c==space){
+                new_answer.push_back(word);
+                word.clear();}else{word += c;}
+                new_answer.push_back(word);
+                return new_answer;
+        }}
 // for clearing terminal screen
 void clear()
 {
@@ -64,9 +74,52 @@ public:
     void setUserAnswer(string user_answer) { this->user_answer = user_answer; }
 };
 
-class WrittenQuestion : public Question
+class WrittenAnswer : public Question
 {
-    // TODO implement written questions
+    private:
+    string answer;
+    vector<string> real_answer;
+    public:
+    void getReal_answer(){
+        int number_of_possible_answers;
+        string possible_answer;
+        cout<<"Enter how many possible answers do you want to include:";
+        cin>>number_of_possible_answers;
+        for(int i = 0; i < number_of_possible_answers; i++){
+            cout<<"Enter popssible answer number "<<i;
+            cin >>possible_answer;
+            real_answer.push_back(possible_answer);
+            possible_answer.clear();
+        }
+    }
+    void compareAnswer(string answer){
+        //spliting all possible answers into words and then putting it into vector of vectors
+        vector<vector<string > > new_real_answer, matching_words;
+        for(string possible_answer : real_answer){
+            new_real_answer.push_back(split_word(possible_answer));
+        }
+        //finding matching words with possible answers
+        vector<string>new_answer = split_word(answer),matching_words_1; 
+        for(vector<string> possible_answer : new_real_answer){
+            for(string word1 : possible_answer){
+                for(string word2 :new_answer ){
+                    if(word2 == word1){
+                        matching_words_1.push_back(word2);
+                        matching_words.push_back(matching_words_1);
+                        break;}}  matching_words_1.clear();  }}
+        //printing matching words with all possible answers
+        for(int i =0; i < new_real_answer.size();i++){
+            cout<<"\nMatching words with possible answer number "<<i<<" : ";
+            for(string word : matching_words[i]){
+                cout<<word<<" ";
+            }
+        }
+
+    }
+    bool checkAnswer(string answer){
+        transform(answer.begin(), answer.end(), answer.begin(), ::tolower);
+        if(this->answer==answer){return true;}else{return false;}
+    }
 };
 
 class MultipleChoice : public Question
@@ -76,8 +129,8 @@ private:
     vector<string> variants;
 
 public:
-    MultipleChoice() : variants_count{DEFAULT_VARIANTS_NUMBER} {};
-    MultipleChoice(int _variants_count) : variants_count(_variants_count) {}
+    MultipleChoice() : variants_count(DEFAULT_VARIANTS_NUMBER) {} ;
+    MultipleChoice(int variants_count) : variants_count(variants_count) {};
 
     void setVariants()
     {
