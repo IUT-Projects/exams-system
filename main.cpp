@@ -133,7 +133,7 @@ int main()
         cout << "Your Option> ";
         cin >> user_option;
 
-        // clear();
+        clear();
         switch (user_option)
         {
         case 1:
