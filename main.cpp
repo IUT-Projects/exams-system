@@ -90,17 +90,14 @@ public:
         int user_answer = answer % 65;
         setUser_Answer(variants[user_answer]);
     }
-    int checkAnswer(char answer)
+    bool checkAnswer(char answer)
     {
         int user_answer = answer % 65;
         if (variants[user_answer] == getUser_Answer())
         {
-            return 1;
+            return true;
         }
-        else
-        {
-            return 0;
-        }
+        return false;
     }
 };
 
