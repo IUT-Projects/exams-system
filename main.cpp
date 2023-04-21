@@ -72,11 +72,11 @@ public:
     {
         int number_of_possible_answers;
         string possible_answer;
-        cout << "Enter how many possible answers do you want to include:";
+        cout << "Enter how many possible answers do you want to include: ";
         cin >> number_of_possible_answers;
         for (int i = 0; i < number_of_possible_answers; i++)
         {
-            cout << "Enter popssible answer number " << i;
+            cout << "Enter possible answer number " << i;
             cin >> possible_answer;
             real_answer.push_back(possible_answer);
             possible_answer.clear();
@@ -224,10 +224,10 @@ public:
     }
     void display()
     {
-        cout << "ID:" << ID << endl;
-        cout << "Name:" << name << endl;
-        cout << "Age:" << age << endl;
-        cout << "Role:" << role << endl;
+        cout << "ID: " << ID << endl;
+        cout << "Name: " << name << endl;
+        cout << "Age: " << age << endl;
+        cout << "Role: " << role << endl;
     }
     static string createID(User *object)
     {
