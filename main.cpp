@@ -85,7 +85,7 @@ public:
     void compareAnswer(string answer)
     {
         // spliting all possible answers into words and then putting it into vector of vectors
-        vector<vector<string>> new_real_answer, matching_words;
+        vector<vector<string> > new_real_answer, matching_words;
         for (string possible_answer : real_answer)
         {
             new_real_answer.push_back(splitWord(possible_answer));
