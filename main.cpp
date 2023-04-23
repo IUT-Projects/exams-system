@@ -5,7 +5,6 @@
 #include <sstream>
 #include <string>
 #include <cctype>
-#include <fstream>
 #define DEFAULT_VARIANTS_NUMBER 3
 
 using namespace std;
@@ -368,7 +367,6 @@ public:
         user.display();
         this->participants.push_back(user);
 
-<<<<<<< HEAD
         for (MultipleChoice question : multi_questions)
         {
             question.start();
@@ -379,33 +377,6 @@ public:
         int type, number_of_questions;
         cout << "Enter number of questions that you want: ";
         cin >> number_of_questions;
-=======
-void registerMenu()
-{
-    User fuser;
-    fstream file;
-    file.open("InfoFile.txt", ios::app);
-    file<<"ID: "<<fuser.ID<<endl;;
-    file<<"Name: "<<fuser.name<<endl;
-    file<<"Age: "<<fuser.age<<endl;
-    file<<"Role: "<<fuser.role<<endl;
-    file.close();    
-}
-
-/* Some kind of testing functions for menu*/
-void testRegisterUser()
-{
-    User user1, user2;
-    string name, role;
-    int age;
-    cout << "Enter name, age and role: ";
-    cin >> name >> age >> role;
-    user1.setData(name, age, role, "some_password");
-    user2.setData(name, age, role, "some_password");
-    user1.display();
-    user2.display();
-}
->>>>>>> 6075fd29ffbf416bc38d1317710349c3feccfe8e
 
         for (int counter = 0; counter < number_of_questions; counter++)
         {
@@ -502,23 +473,12 @@ void teacherMenu(User user)
 
     while (isRunning)
     {
-<<<<<<< HEAD
         cout << "\n[ MENU ]" << endl;
         cout << "1. Create exam" << endl;
         cout << "2. List of exams" << endl;
         cout << "3. User info" << endl;
         cout << "(other) Quit" << endl;
         integerInput("Your option", option);
-=======
-        cout << "\n[ MENU ] " << endl;
-        cout << " 1. Test user register" << endl;
-        cout << " 2. Test multi choice question" << endl;
-        cout << " 3. Test written question" << endl;
-        cout << " 0. Quit" << endl;
-
-        cout << "Your Option > ";
-        cin >> user_option;
->>>>>>> 6075fd29ffbf416bc38d1317710349c3feccfe8e
 
         clear();
 
