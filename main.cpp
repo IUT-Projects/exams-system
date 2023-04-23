@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include <cctype>
+#include <fstream>
 #define DEFAULT_VARIANTS_NUMBER 3
 
 using namespace std;
@@ -268,6 +269,18 @@ if user is not found, then inform about it.
 That's main ideas, i think you understood problem.
 */
 
+void registerMenu()
+{
+    User fuser;
+    fstream file;
+    file.open("InfoFile.txt", ios::app);
+    file<<"ID: "<<fuser.ID<<endl;;
+    file<<"Name: "<<fuser.name<<endl;
+    file<<"Age: "<<fuser.age<<endl;
+    file<<"Role: "<<fuser.role<<endl;
+    file.close();    
+}
+
 /* Some kind of testing functions for menu*/
 void testRegisterUser()
 {
@@ -395,7 +408,7 @@ int main()
         cout << " 3. Test written question" << endl;
         cout << " 0. Quit" << endl;
 
-        cout << "Your Option> ";
+        cout << "Your Option > ";
         cin >> user_option;
 
         clear();
