@@ -3,11 +3,21 @@
 #include <vector>
 #include <sstream>
 #include <string>
-#include <stdexcept>
 #include <cctype>
 #define DEFAULT_VARIANTS_NUMBER 3
 
 using namespace std;
+
+const char *banner = R""""(
+ _____                          _____           _                
+|  ___|                        /  ___|         | |  
+| |____  ____ _ _ __ ___  ___  \ `--. _   _ ___| |_ ___ _ __ ___ 
+|  __\ \/ / _` | '_ ` _ \/ __|  `--. \ | | / __| __/ _ \ '_ ` _ \
+| |___>  < (_| | | | | | \__ \ /\__/ / |_| \__ \ ||  __/ | | | | |
+|____/_/\_\__,_|_| |_| |_|___/ \____/ \__, |___/\__\___|_| |_| |_|
+                                       __/ |                      
+                                      |___/
+)"""";
 
 /* Utility functions */
 vector<string> splitWord(string answer)
@@ -85,7 +95,7 @@ public:
     void compareAnswer(string answer)
     {
         // spliting all possible answers into words and then putting it into vector of vectors
-        vector<vector<string> > new_real_answer, matching_words;
+        vector<vector<string>> new_real_answer, matching_words;
         for (string possible_answer : real_answer)
         {
             new_real_answer.push_back(splitWord(possible_answer));
@@ -120,7 +130,7 @@ public:
     }
     bool checkAnswer(string answer)
     {
-        transform(answer.begin(), answer.end(), answer.begin(), ::tolower);
+        // transform(answer.begin(), answer.end(), answer.begin(), ::tolower);
         if (this->answer == answer)
         {
             return true;
@@ -244,6 +254,7 @@ public:
         // if role is student, we have "S"
         return (char)toupper(object->role[0]) + ID.substr(5, ID.size());
     }
+    friend void registerMenu();
 };
 /*
 TODO
@@ -306,10 +317,75 @@ void testWritten()
     question.compareAnswer(answer_text);
 }
 
+void registerMenu()
+{
+    string answer;
+    int age, role_option;
+    bool isCompleted = false;
+    string name, role, password;
+
+    cout << "Do you have an account? (y/n)";
+    cin >> answer;
+
+    bool hasAccount = (answer == "Y" || answer == "y") ? true : false;
+
+    vector<User> users_data = {};
+
+    if (hasAccount)
+    {
+        // there should be logic to checking user input
+        // function should search from file, filter user's name and password
+        cout << "You are great!" << endl;
+    }
+    else
+    {
+        while (!isCompleted)
+        {
+
+            cout << "What is your name? ";
+            cin >> name;
+            cout << "How old are you? ";
+            cin >> age;
+            cout << "Select your role:" << endl;
+            cout << "1. Teacher" << endl;
+            cout << "2. Student" << endl;
+            cout << "role> ";
+            cin >> role_option;
+
+            if (role_option == 1)
+            {
+                role = TEACHER;
+                isCompleted = true;
+            }
+            else if (role_option == 2)
+            {
+                role = STUDENT;
+                isCompleted = true;
+            }
+            else
+            {
+                cout << "Input again!" << endl;
+            }
+
+            cout << "Your password:";
+            cin >> password;
+        }
+
+        User user;
+        user.setData(name, age, role, password);
+        cout << "[ Save that information ]" << endl;
+        cout << "Your ID: " << user.ID << endl;
+        cout << "Your Password: " << user.password << endl;
+    }
+}
+
 int main()
 {
     int user_option;
     bool isRunning = true;
+    cout << banner;
+
+    registerMenu();
 
     while (isRunning)
     {
