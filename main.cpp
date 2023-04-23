@@ -1,5 +1,6 @@
 // imports
 #include <iostream>
+#include <limits>
 #include <vector>
 #include <sstream>
 #include <string>
@@ -20,6 +21,38 @@ const char *banner = R""""(
 )"""";
 
 /* Utility functions */
+
+// Usage:
+
+// data_type value_name;
+// value_name  = data_typeInput("Enter value: ")
+void stringInput(string text, string &value)
+{
+    cout << text << ":";
+    cin >> value;
+}
+
+void integerInput(string text, int &value)
+{
+    while (true)
+    {
+        cout << text << ":";
+        cin >> value;
+
+        if (cin.fail())
+        {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "You have entered wrong input!" << endl;
+        }
+        else
+        {
+            cout << "So value is: " << value << endl;
+            break;
+        }
+    }
+}
+
 vector<string> splitWord(string answer)
 {
     string word;
@@ -43,7 +76,6 @@ vector<string> splitWord(string answer)
 // for clearing terminal screen
 void clear()
 {
-
 #if defined _WIN32
     system("cls");
 #elif defined(__LINUX__) || defined(__gnu_linux__) || defined(__linux__)
@@ -53,13 +85,86 @@ void clear()
 #endif
 }
 
-// for creating ID
+/* Users & Register */
+string TEACHER = "teacher", STUDENT = "student", ADMIN = "admin";
+
+class User
+{
+private:
+    string name, role, ID, password;
+    int age;
+
+public:
+    User(){};
+    void setData(string name, int age, string role, string password)
+    {
+        this->age = age;
+        this->name = name;
+        this->role = role;
+        this->password = password;
+        this->ID = User::createID(this);
+    }
+    string Name()
+    {
+        return name;
+    }
+    string Role()
+    {
+        return role;
+    }
+    string getID()
+    {
+        return ID;
+    }
+    int Age()
+    {
+        return age;
+    }
+    string Password()
+    {
+        return password;
+    }
+
+    void display()
+    {
+        cout << "ID: " << ID << endl;
+        cout << "Name: " << name << endl;
+        cout << "Age: " << age << endl;
+        cout << "Role: " << role << endl;
+    }
+    static string createID(User *object)
+    {
+        // Takes object as an argument,
+        // function will get its memory address.
+        // converts it to string
+        // returns all contents from the 5th char (we dont need first chars like 0x)
+        // user id should be unique, and memory addr. also unique.
+        const void *address = static_cast<const void *>(object);
+        stringstream current_object_address;
+        current_object_address << address;
+        string ID = current_object_address.str();
+        // (char)toupper(object->role[0]) - is first letter of role
+        // if role is student, we have "S"
+        return (char)toupper(object->role[0]) + ID.substr(5, ID.size());
+    }
+    friend User performAuth();
+};
+/*
+TODO
+
+we have user object.
+write function or member function to user class
+that stores all user data to one file.
+
+write function that searches user by its username and password.
+if user is not found, then inform about it.
+That's main ideas, i think you understood problem.
+*/
 
 /* QUESTIONS */
 
 class Question
 {
-    // Base class for all questions
 protected:
     string question;
 
@@ -78,6 +183,12 @@ private:
     vector<string> real_answer;
 
 public:
+    string type = "written";
+
+    void input()
+    {
+        cout << "Calling input function> " << endl;
+    }
     void getRealAnswer()
     {
         int number_of_possible_answers;
@@ -130,12 +241,7 @@ public:
     }
     bool checkAnswer(string answer)
     {
-        // transform(answer.begin(), answer.end(), answer.begin(), ::tolower);
-        if (this->answer == answer)
-        {
-            return true;
-        }
-        return false;
+        return this->answer == answer;
     }
 };
 
@@ -146,8 +252,18 @@ private:
     int variants_count, correct_option, user_option{0};
 
 public:
+    string type = "multi";
     MultipleChoice() : variants_count(DEFAULT_VARIANTS_NUMBER){};
     MultipleChoice(int _variants_count) : variants_count(_variants_count){};
+    void input()
+    {
+        stringInput("Enter the question text", this->question);
+        this->setVariants();
+        char correct_answer;
+        cout << "Enter correct answer: ";
+        cin >> correct_answer;
+        this->setAnswer(correct_answer);
+    }
 
     void setVariants()
     {
@@ -187,8 +303,16 @@ public:
     {
         cout << this->question << endl;
         showVariants();
-        cout << "c option " << correct_option << endl;
-        cout << "u option " << user_option << endl;
+    }
+
+    void start()
+    {
+        this->display();
+        char user_answer;
+        cout << "Your answer is: ";
+        cin >> user_answer;
+        this->setUserAnswer(user_answer);
+        cout << "The answer is -> " << boolalpha << this->checkAnswer() << endl;
     }
 
     bool checkAnswer()
@@ -199,130 +323,92 @@ public:
 
 class Exam
 {
-    /*
-    TODO
-    exam is main object that contains:
-    - list of all questions
-    - list of users that attend. to this exam.
-    Method run() that starts exam, prints question one by one, takes answer from user
-    then shows results
-
-    If you have any other idea you can implement it
-    Then just write test function for menu, and add your block to switch case statement and run.
-    */
-};
-
-/* USERS */
-
-string TEACHER = "teacher", STUDENT = "student", ADMIN = "admin";
-
-class User
-{
 private:
-    string name, role, ID, password;
-    int age;
+    vector<User> participants;
+    vector<MultipleChoice> multi_questions;
+    vector<WrittenQuestion> written_questions;
 
 public:
-    User(){};
-    void setData(string name, int age, string role, string password)
+    Exam(){};
+    // Functions for adding questions to exam
+    void includeMultipleChoiceQuestions(vector<MultipleChoice> questions)
     {
-        this->age = age;
-        this->name = name;
-        this->role = role;
-        this->password = password;
-        this->ID = User::createID(this);
+        for (MultipleChoice question : questions)
+        {
+
+            this->multi_questions.push_back(question);
+        }
     }
-    void display()
+    void includeWrittenQuestions(vector<WrittenQuestion> questions)
     {
-        cout << "ID: " << ID << endl;
-        cout << "Name: " << name << endl;
-        cout << "Age: " << age << endl;
-        cout << "Role: " << role << endl;
+        for (WrittenQuestion question : questions)
+        {
+
+            this->written_questions.push_back(question);
+        }
     }
-    static string createID(User *object)
+    void includeMultipleChoiceQuestion(MultipleChoice question)
     {
-        // Takes object as an argument,
-        // function will get its memory address.
-        // converts it to string
-        // returns all contents from the 5th char (we dont need first chars like 0x)
-        // user id should be unique, and memory addr. also unique.
-        const void *address = static_cast<const void *>(object);
-        stringstream current_object_address;
-        current_object_address << address;
-        string ID = current_object_address.str();
-        // (char)toupper(object->role[0]) - is first letter of role
-        // if role is student, we have "S"
-        return (char)toupper(object->role[0]) + ID.substr(5, ID.size());
+        this->multi_questions.push_back(question);
     }
-    friend void registerMenu();
+    void includeWrittenQuestion(WrittenQuestion question)
+    {
+        this->written_questions.push_back(question);
+    }
+
+    int getTotalNumberOfQuestions()
+    {
+        return this->multi_questions.size() + this->written_questions.size();
+    }
+
+    void start(User user)
+    {
+        cout << "Exam is started by " << endl;
+        user.display();
+        this->participants.push_back(user);
+
+        for (MultipleChoice question : multi_questions)
+        {
+            question.start();
+        }
+    }
+    void insertQuestions()
+    {
+        int type, number_of_questions;
+        cout << "Enter number of questions that you want: ";
+        cin >> number_of_questions;
+
+        for (int counter = 0; counter < number_of_questions; counter++)
+        {
+            integerInput("Type of question -> Multiple Choice(1) or Written(2)", type);
+
+            if (type == 1)
+            {
+                MultipleChoice question;
+                question.input();
+                this->includeMultipleChoiceQuestion(question);
+            }
+            else if (type == 2)
+            {
+                WrittenQuestion question;
+                question.input();
+                this->includeWrittenQuestion(question);
+            }
+            else
+            {
+                cout << "Wrong input, try again" << endl;
+            }
+        }
+    }
 };
-/*
-TODO
 
-we have user object.
-write function or member function to user class
-that stores all user data to one file.
+/* Menu */
 
-write function that searches user by its username and password.
-if user is not found, then inform about it.
-That's main ideas, i think you understood problem.
-*/
-
-/* Some kind of testing functions for menu*/
-void testRegisterUser()
+User performAuth()
 {
-    User user1, user2;
-    string name, role;
-    int age;
-    cout << "Enter name, age and role: ";
-    cin >> name >> age >> role;
-    user1.setData(name, age, role, "some_password");
-    user2.setData(name, age, role, "some_password");
-    user1.display();
-    user2.display();
-}
-
-void testMultipleChoice()
-{
-    MultipleChoice question(3);
-    question.setQuestion("integral from x^2");
-    question.setVariants();
-    char correct_answer;
-    cout << "Enter correct answer: ";
-    cin >> correct_answer;
-    question.setAnswer(correct_answer);
-    question.display();
-
-    char answer;
-    cout << "Enter your answer: ";
-    cin >> answer;
-
-    question.setUserAnswer(answer);
-    cout << "Answer is " << boolalpha << question.checkAnswer() << endl;
-}
-
-void testWritten()
-{
-    WrittenQuestion question;
-    cout << "Enter question: ";
-    string question_text;
-    cin >> question_text;
-
-    cout << "Enter answer: ";
-    string answer_text;
-    cin >> answer_text;
-
-    question.setQuestion(question_text);
-    question.getRealAnswer();
-    question.compareAnswer(answer_text);
-}
-
-void registerMenu()
-{
+    User user;
     string answer;
-    int age, role_option;
     bool isCompleted = false;
-    string name, role, password;
 
     cout << "Do you have an account? (y/n)";
     cin >> answer;
@@ -339,86 +425,116 @@ void registerMenu()
     }
     else
     {
-        while (!isCompleted)
+        int age, role_option;
+        string name, role, password;
+
+        while (true)
         {
 
-            cout << "What is your name? ";
-            cin >> name;
-            cout << "How old are you? ";
-            cin >> age;
+            stringInput("What is your name?", name);
+
+            integerInput("How old are you?", age);
+
             cout << "Select your role:" << endl;
             cout << "1. Teacher" << endl;
             cout << "2. Student" << endl;
-            cout << "role> ";
-            cin >> role_option;
+            integerInput("Your role", role_option);
 
             if (role_option == 1)
             {
                 role = TEACHER;
-                isCompleted = true;
+                break;
             }
             else if (role_option == 2)
             {
                 role = STUDENT;
-                isCompleted = true;
+                break;
             }
             else
             {
                 cout << "Input again!" << endl;
             }
 
-            cout << "Your password:";
-            cin >> password;
+            stringInput("Your password?", password);
         }
 
-        User user;
         user.setData(name, age, role, password);
         cout << "[ Save that information ]" << endl;
-        cout << "Your ID: " << user.ID << endl;
+        cout << "Your ID: " << user.getID() << endl;
         cout << "Your Password: " << user.password << endl;
     }
+    return user;
+}
+
+void teacherMenu(User user)
+{
+    int option;
+    bool isRunning = true;
+
+    while (isRunning)
+    {
+        cout << "\n[ MENU ]" << endl;
+        cout << "1. Create exam" << endl;
+        cout << "2. List of exams" << endl;
+        cout << "3. User info" << endl;
+        cout << "(other) Quit" << endl;
+        integerInput("Your option", option);
+
+        clear();
+
+        if (option == 1)
+        {
+            Exam exam;
+            exam.insertQuestions();
+            cout << "Creating exam:" << endl;
+            exam.start(user);
+        }
+        else if (option == 2)
+        {
+            cout << "List of exams: " << endl;
+        }
+        else if (option == 3)
+        {
+            user.display();
+        }
+        else
+        {
+            cout << "Good bye!" << endl;
+            exit(0);
+        }
+    }
+}
+
+void studentMenu(User user)
+{
+    cout << "Student menu!" << endl;
+    user.display();
 }
 
 int main()
 {
-    int user_option;
-    bool isRunning = true;
     cout << banner;
 
-    registerMenu();
+    User user = performAuth();
 
-    while (isRunning)
+    while (true)
     {
-        cout << "\n[ MENU ] " << endl;
-        cout << " 1. Test user register" << endl;
-        cout << " 2. Test multi choice question" << endl;
-        cout << " 3. Test written question" << endl;
-        cout << " 0. Quit" << endl;
+        cout << "User role is: " << user.Role() << endl;
 
-        cout << "Your Option> ";
-        cin >> user_option;
-
-        clear();
-        switch (user_option)
+        if (user.Role() == TEACHER)
         {
-        case 1:
-            testRegisterUser();
+            teacherMenu(user);
             break;
-        case 2:
-            testMultipleChoice();
+        }
+        else if (user.Role() == STUDENT)
+        {
+            studentMenu(user);
             break;
-        case 3:
-            testWritten();
-            break;
-        case 0:
-            isRunning = false;
+        }
+        else
+        {
             cout << "Good bye!" << endl;
             exit(0);
-            break;
-        default:
-            isRunning = false;
-            cout << "No Matching Option!" << endl;
-            break;
         }
     }
 
