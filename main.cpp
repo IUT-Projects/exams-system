@@ -1,5 +1,6 @@
 // imports
 #include <iostream>
+#include <fstream>
 #include <limits>
 #include <vector>
 #include <sstream>
@@ -162,6 +163,17 @@ write function that searches user by its username and password.
 if user is not found, then inform about it.
 That's main ideas, i think you understood problem.
 */
+void readUserFromFile()
+{
+    User fuser;
+    fstream file;
+    file.open("InfoFile.txt", ios::app);
+    file << "ID: " << fuser.getID() << endl;
+    file << "Name: " << fuser.Name() << endl;
+    file << "Age: " << fuser.Age() << endl;
+    file << "Role: " << fuser.Role() << endl;
+    file.close();
+}
 
 /* QUESTIONS */
 
