@@ -29,7 +29,8 @@ const char *banner = R""""(
 void stringInput(string text, string &value)
 {
     cout << text << ":";
-    cin >> value;
+    cin.ignore();
+    getline(cin, value);
 }
 
 void integerInput(string text, int &value)
@@ -91,8 +92,8 @@ string TEACHER = "teacher", STUDENT = "student", ADMIN = "admin";
 class User
 {
 private:
-    string name, role, ID, password;
     int age;
+    string name, role, ID, password;
 
 public:
     User(){};
@@ -148,6 +149,7 @@ public:
         return (char)toupper(object->role[0]) + ID.substr(5, ID.size());
     }
     friend User performAuth();
+    friend class Exam;
 };
 /*
 TODO
@@ -274,7 +276,7 @@ public:
         {
 
             cout << "Variant " << option << ": ";
-            cin >> variant_option;
+            stringInput("", variant_option);
             variants.push_back(variant_option);
             option++;
         }
@@ -324,12 +326,15 @@ public:
 class Exam
 {
 private:
+    string title;
+    User author;
     vector<User> participants;
     vector<MultipleChoice> multi_questions;
     vector<WrittenQuestion> written_questions;
 
 public:
-    Exam(){};
+    Exam(User _author) : author(_author){};
+    Exam(User _author, string _title) : author(_author), title(_title){};
     // Functions for adding questions to exam
     void includeMultipleChoiceQuestions(vector<MultipleChoice> questions)
     {
@@ -361,6 +366,15 @@ public:
         return this->multi_questions.size() + this->written_questions.size();
     }
 
+    void info()
+    {
+        cout << this->title << " exam" << endl;
+        cout << "Author: " << this->author.Name() << endl;
+        cout << "Total number of questions: " << this->getTotalNumberOfQuestions() << endl;
+        cout << "Total number of participants: " << this->participants.size() << endl;
+        cout << "Number of written questions: " << this->written_questions.size() << endl;
+        cout << "Number of multi-choice questions: " << this->multi_questions.size() << endl;
+    }
     void start(User user)
     {
         cout << "Exam is started by " << endl;
@@ -375,8 +389,7 @@ public:
     void insertQuestions()
     {
         int type, number_of_questions;
-        cout << "Enter number of questions that you want: ";
-        cin >> number_of_questions;
+        integerInput("Enter number of questions that you want: ", number_of_questions);
 
         for (int counter = 0; counter < number_of_questions; counter++)
         {
@@ -484,10 +497,11 @@ void teacherMenu(User user)
 
         if (option == 1)
         {
-            Exam exam;
+            Exam exam(user, "Calculus 2");
             exam.insertQuestions();
-            cout << "Creating exam:" << endl;
+            cout << endl;
             exam.start(user);
+            exam.info();
         }
         else if (option == 2)
         {
