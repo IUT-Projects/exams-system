@@ -1,12 +1,14 @@
 // imports
 #include <iostream>
 #include <fstream>
-#include <limits>
+#include <random>
 #include <vector>
 #include <sstream>
 #include <string>
+#include <algorithm>
 #include <cctype>
 #define DEFAULT_VARIANTS_NUMBER 3
+#define USER_DATA_PATH "./data/users.txt"
 
 using namespace std;
 
@@ -22,18 +24,6 @@ const char *banner = R""""(
 )"""";
 
 /* Utility functions */
-
-// Usage:
-
-// data_type value_name;
-// value_name  = data_typeInput("Enter value: ")
-void stringInput(string text, string &value)
-{
-    cout << text << ":";
-    cin.ignore();
-    getline(cin, value);
-}
-
 void integerInput(string text, int &value)
 {
     while (true)
@@ -49,32 +39,30 @@ void integerInput(string text, int &value)
         }
         else
         {
-            cout << "So value is: " << value << endl;
+            // everything is ok
             break;
         }
     }
 }
 
-vector<string> splitWord(string answer)
-{
-    string word;
-    vector<string> new_answer;
-    char space = ' ';
-    for (char chunk : answer)
+vector<string> split(const string &str, const string &delim)
+{ // split word -> vector of tokens by some delimeter
+    // e.g "Abduaziz,Ziyodov"" -> {"Abduaziz", "Ziyodov"}
+    vector<string> tokens;
+    size_t prev = 0, pos = 0;
+    do
     {
-        if (chunk == space)
-        {
-            new_answer.push_back(word);
-            word.clear();
-        }
-        else
-        {
-            word += chunk;
-        }
-        new_answer.push_back(word);
-    }
-    return new_answer;
+        pos = str.find(delim, prev);
+        if (pos == string::npos)
+            pos = str.length();
+        string token = str.substr(prev, pos - prev);
+        if (!token.empty())
+            tokens.push_back(token);
+        prev = pos + delim.length();
+    } while (pos < str.length() && prev < str.length());
+    return tokens;
 }
+
 // for clearing terminal screen
 void clear()
 {
@@ -92,19 +80,18 @@ string TEACHER = "teacher", STUDENT = "student", ADMIN = "admin";
 
 class User
 {
+    // TODO: option for freshman, sophomore, junior.
 private:
-    int age;
     string name, role, ID, password;
 
 public:
     User(){};
-    void setData(string name, int age, string role, string password)
+    void setData(string name, string role, string password, string ID = "")
     {
-        this->age = age;
         this->name = name;
         this->role = role;
         this->password = password;
-        this->ID = User::createID(this);
+        this->ID = ID.empty() ? User::createID(this) : ID;
     }
     string Name()
     {
@@ -118,10 +105,6 @@ public:
     {
         return ID;
     }
-    int Age()
-    {
-        return age;
-    }
     string Password()
     {
         return password;
@@ -131,7 +114,6 @@ public:
     {
         cout << "ID: " << ID << endl;
         cout << "Name: " << name << endl;
-        cout << "Age: " << age << endl;
         cout << "Role: " << role << endl;
     }
     static string createID(User *object)
@@ -149,31 +131,44 @@ public:
         // if role is student, we have "S"
         return (char)toupper(object->role[0]) + ID.substr(5, ID.size());
     }
-    friend User performAuth();
+    static void addUser(User user)
+    {
+        // Write user object to data
+        fstream file;
+        file.open(USER_DATA_PATH, ios::app);
+
+        file << user.name << "|" << user.role << "|" << user.password << "|" << user.ID << endl;
+
+        file.close();
+    }
+    static vector<User> loadUsers()
+    {
+        string line;
+        vector<User> users;
+
+        User data;
+        fstream file;
+        file.open(USER_DATA_PATH, ios::in);
+
+        while (getline(file, line))
+        {
+            vector<string> user_data = split(line, "|");
+
+            data.setData(
+                user_data[0], // name
+                user_data[1], // role
+                user_data[2], // password
+                user_data[3]  // ID
+            );
+
+            users.push_back(data);
+        }
+        file.close();
+        return users;
+    }
     friend class Exam;
+    friend User performAuth();
 };
-/*
-TODO
-
-we have user object.
-write function or member function to user class
-that stores all user data to one file.
-
-write function that searches user by its username and password.
-if user is not found, then inform about it.
-That's main ideas, i think you understood problem.
-*/
-void readUserFromFile()
-{
-    User fuser;
-    fstream file;
-    file.open("InfoFile.txt", ios::app);
-    file << "ID: " << fuser.getID() << endl;
-    file << "Name: " << fuser.Name() << endl;
-    file << "Age: " << fuser.Age() << endl;
-    file << "Role: " << fuser.Role() << endl;
-    file.close();
-}
 
 /* QUESTIONS */
 
@@ -184,78 +179,79 @@ protected:
 
 public:
     Question(){};
-    void setQuestion(string question_text)
+    void setQuestion(string question)
     {
-        this->question = question_text;
+        this->question = question;
     }
+    void start();
+    void display();
+    bool checkAnswer();
 };
 
-class WrittenQuestion : public Question
+class ShortAnswerQuestion : public Question
 {
 private:
-    string answer;
-    vector<string> real_answer;
+    string correct_answer;
+    string user_answer;
 
 public:
     string type = "written";
 
     void input()
     {
-        cout << "Calling input function> " << endl;
+        string question, answer;
+
+        cout << "Enter the question: ";
+        cin.ignore();
+
+        getline(cin, question);
+
+        cout << "Enter the short answer: ";
+        getline(cin, answer);
+
+        this->setQuestion(question);
+        this->setAnswer(answer);
     }
-    void getRealAnswer()
+    void setAnswer(string answer)
     {
-        int number_of_possible_answers;
-        string possible_answer;
-        cout << "Enter how many possible answers do you want to include: ";
-        cin >> number_of_possible_answers;
-        for (int i = 0; i < number_of_possible_answers; i++)
-        {
-            cout << "Enter possible answer number " << i;
-            cin >> possible_answer;
-            real_answer.push_back(possible_answer);
-            possible_answer.clear();
-        }
+
+        this->toLowerCase(answer);
+        this->correct_answer = answer;
     }
-    void compareAnswer(string answer)
+    void setUserAnswer(string answer)
     {
-        // spliting all possible answers into words and then putting it into vector of vectors
-        vector<vector<string>> new_real_answer, matching_words;
-        for (string possible_answer : real_answer)
-        {
-            new_real_answer.push_back(splitWord(possible_answer));
-        }
-        // finding matching words with possible answers
-        vector<string> new_answer = splitWord(answer), matching_words_1;
-        for (vector<string> possible_answer : new_real_answer)
-        {
-            for (string word1 : possible_answer)
-            {
-                for (string word2 : new_answer)
-                {
-                    if (word2 == word1)
-                    {
-                        matching_words_1.push_back(word2);
-                        matching_words.push_back(matching_words_1);
-                        break;
-                    }
-                }
-                matching_words_1.clear();
-            }
-        }
-        // printing matching words with all possible answers
-        for (int i = 0; i < new_real_answer.size(); i++)
-        {
-            cout << "\nMatching words with possible answer number " << i << " : ";
-            for (string word : matching_words[i])
-            {
-                cout << word << " ";
-            }
-        }
+        this->toLowerCase(answer);
+        this->user_answer = answer;
     }
-    bool checkAnswer(string answer)
+    void display()
     {
-        return this->answer == answer;
+        cout << "Short Answer question:" << this->question << endl;
+    }
+    void toLowerCase(string &data)
+    {
+        // Convert string lowercase
+        // e.g SANJAR -> sanjar
+        transform(data.begin(), data.end(), data.begin(),
+                  [](unsigned char c)
+                  { return std::tolower(c); });
+    }
+
+    void start()
+    {
+        string user_answer;
+
+        this->display();
+
+        cout << "Your answer: ";
+        cin.ignore();
+        getline(cin, user_answer);
+
+        this->setUserAnswer(user_answer);
+        cout << "The answer is -> " << boolalpha << this->checkAnswer() << ", " << correct_answer << "was correct!" << endl;
+    }
+    bool checkAnswer()
+    {
+        return this->correct_answer == this->user_answer;
     }
 };
 
@@ -271,10 +267,14 @@ public:
     MultipleChoice(int _variants_count) : variants_count(_variants_count){};
     void input()
     {
-        stringInput("Enter the question text", this->question);
+        string question_text;
+
+        cout << "Enter the question text:";
+        getline(cin, question_text);
+        this->setQuestion(question_text);
         this->setVariants();
         char correct_answer;
-        cout << "Enter correct answer: ";
+        cout << "Enter correct answer:";
         cin >> correct_answer;
         this->setAnswer(correct_answer);
     }
@@ -283,12 +283,12 @@ public:
     {
         char option = 'A';
         string variant_option;
-        cout << "Enter the variants" << endl;
+        cout << "Enter the variants:" << endl;
         for (int i = 0; i < variants_count; i++)
         {
 
-            cout << "Variant " << option << ": ";
-            stringInput("", variant_option);
+            cout << "Variant" << option << ":";
+            getline(cin, variant_option);
             variants.push_back(variant_option);
             option++;
         }
@@ -299,7 +299,7 @@ public:
         char option = 'A';
         for (string variant : variants)
         {
-            cout << option << ") " << variant << endl;
+            cout << option << ")" << variant << endl;
             option++;
         }
     }
@@ -323,7 +323,7 @@ public:
     {
         this->display();
         char user_answer;
-        cout << "Your answer is: ";
+        cout << "Your answer is:";
         cin >> user_answer;
         this->setUserAnswer(user_answer);
         cout << "The answer is -> " << boolalpha << this->checkAnswer() << endl;
@@ -331,18 +331,18 @@ public:
 
     bool checkAnswer()
     {
-        return (correct_option == user_option) ? true : false;
+        return (correct_option == user_option);
     }
 };
 
 class Exam
 {
 private:
-    string title;
     User author;
+    string title;
     vector<User> participants;
     vector<MultipleChoice> multi_questions;
-    vector<WrittenQuestion> written_questions;
+    vector<ShortAnswerQuestion> short_answer_questions;
 
 public:
     Exam(User _author) : author(_author){};
@@ -356,26 +356,26 @@ public:
             this->multi_questions.push_back(question);
         }
     }
-    void includeWrittenQuestions(vector<WrittenQuestion> questions)
+    void includeShortAnswerQuestions(vector<ShortAnswerQuestion> questions)
     {
-        for (WrittenQuestion question : questions)
+        for (ShortAnswerQuestion question : questions)
         {
 
-            this->written_questions.push_back(question);
+            this->short_answer_questions.push_back(question);
         }
     }
     void includeMultipleChoiceQuestion(MultipleChoice question)
     {
         this->multi_questions.push_back(question);
     }
-    void includeWrittenQuestion(WrittenQuestion question)
+    void includeShortAnswerQuestion(ShortAnswerQuestion question)
     {
-        this->written_questions.push_back(question);
+        this->short_answer_questions.push_back(question);
     }
 
     int getTotalNumberOfQuestions()
     {
-        return this->multi_questions.size() + this->written_questions.size();
+        return this->multi_questions.size() + this->short_answer_questions.size();
     }
 
     void info()
@@ -384,16 +384,31 @@ public:
         cout << "Author: " << this->author.Name() << endl;
         cout << "Total number of questions: " << this->getTotalNumberOfQuestions() << endl;
         cout << "Total number of participants: " << this->participants.size() << endl;
-        cout << "Number of written questions: " << this->written_questions.size() << endl;
+        cout << "Number of written questions: " << this->short_answer_questions.size() << endl;
         cout << "Number of multi-choice questions: " << this->multi_questions.size() << endl;
+    }
+
+    template <typename T>
+    void shuffleQuestions(vector<T> &questions)
+    {
+        auto random_engine = default_random_engine{};
+        shuffle(begin(questions), end(questions), random_engine);
     }
     void start(User user)
     {
         cout << "Exam is started by " << endl;
         user.display();
+
         this->participants.push_back(user);
 
+        this->shuffleQuestions(this->multi_questions);
+        this->shuffleQuestions(this->short_answer_questions);
+
         for (MultipleChoice question : multi_questions)
+        {
+            question.start();
+        }
+        for (ShortAnswerQuestion question : short_answer_questions)
         {
             question.start();
         }
@@ -401,6 +416,7 @@ public:
     void insertQuestions()
     {
         int type, number_of_questions;
+
         integerInput("Enter number of questions that you want: ", number_of_questions);
 
         for (int counter = 0; counter < number_of_questions; counter++)
@@ -415,9 +431,9 @@ public:
             }
             else if (type == 2)
             {
-                WrittenQuestion question;
+                ShortAnswerQuestion question;
                 question.input();
-                this->includeWrittenQuestion(question);
+                this->includeShortAnswerQuestion(question);
             }
             else
             {
@@ -436,7 +452,7 @@ User performAuth()
     bool isCompleted = false;
 
     cout << "Do you have an account? (y/n)";
-    cin >> answer;
+    getline(cin, answer);
 
     bool hasAccount = (answer == "Y" || answer == "y") ? true : false;
 
@@ -450,15 +466,17 @@ User performAuth()
     }
     else
     {
-        int age, role_option;
+        int role_option;
         string name, role, password;
 
         while (true)
         {
 
-            stringInput("What is your name?", name);
+            cout << "What is your name?";
+            getline(cin, name);
 
-            integerInput("How old are you?", age);
+            cout << "Your password?";
+            getline(cin, password);
 
             cout << "Select your role:" << endl;
             cout << "1. Teacher" << endl;
@@ -479,15 +497,15 @@ User performAuth()
             {
                 cout << "Input again!" << endl;
             }
-
-            stringInput("Your password?", password);
         }
 
-        user.setData(name, age, role, password);
+        user.setData(name, role, password);
         cout << "[ Save that information ]" << endl;
         cout << "Your ID: " << user.getID() << endl;
         cout << "Your Password: " << user.password << endl;
+        User::addUser(user);
     }
+
     return user;
 }
 
@@ -504,7 +522,6 @@ void teacherMenu(User user)
         cout << "3. User info" << endl;
         cout << "(other) Quit" << endl;
         integerInput("Your option", option);
-
         clear();
 
         if (option == 1)
@@ -540,9 +557,8 @@ void studentMenu(User user)
 int main()
 {
     cout << banner;
-
+    vector<User> users = User::loadUsers();
     User user = performAuth();
-
     while (true)
     {
         cout << "User role is: " << user.Role() << endl;
