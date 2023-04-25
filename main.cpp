@@ -26,12 +26,14 @@ const char *banner = R""""(
 /* Utility functions */
 void integerInput(string text, int &value)
 {
+    // For handling integer input
+    // In asks from user to input until cin result is fully integer
     while (true)
     {
         cout << text << ":";
         cin >> value;
 
-        if (cin.fail())
+        if (cin.fail()) // if it is not kind of integer
         {
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -46,7 +48,9 @@ void integerInput(string text, int &value)
 }
 
 vector<string> split(const string &str, const string &delim)
-{ // split word -> vector of tokens by some delimeter
+{
+    // stolen from stackoverflow
+    // split word -> vector of tokens by some delimeter
     // e.g "Abduaziz,Ziyodov"" -> {"Abduaziz", "Ziyodov"}
     vector<string> tokens;
     size_t prev = 0, pos = 0;
@@ -63,8 +67,8 @@ vector<string> split(const string &str, const string &delim)
     return tokens;
 }
 
-// for clearing terminal screen
 void clear()
+// for clearing terminal screen
 {
 #if defined _WIN32
     system("cls");
@@ -75,8 +79,9 @@ void clear()
 #endif
 }
 
-
 /* Users & Register */
+
+// user roles as variable
 string TEACHER = "teacher", STUDENT = "student", ADMIN = "admin";
 
 class User
@@ -92,8 +97,11 @@ public:
         this->name = name;
         this->role = role;
         this->password = password;
+        // If user provides id, then init with this id
+        // If not, create it
         this->ID = ID.empty() ? User::createID(this) : ID;
     }
+    // Getters
     string Name()
     {
         return name;
@@ -111,6 +119,7 @@ public:
         return password;
     }
 
+    // Display basic info
     void display()
     {
         cout << "ID: " << ID << endl;
@@ -145,15 +154,15 @@ public:
     static vector<User> loadUsers()
     {
         string line;
-        vector<User> users;
+        vector<User> users; // saving output result
 
-        User data;
+        User data; // temp. user object
         fstream file;
         file.open(USER_DATA_PATH, ios::in);
 
-        while (getline(file, line))
+        while (getline(file, line)) // one user data IN one single line
         {
-            vector<string> user_data = split(line, "|");
+            vector<string> user_data = split(line, "|"); // split line by | and get vector of strings
 
             data.setData(
                 user_data[0], // name
@@ -162,19 +171,20 @@ public:
                 user_data[3]  // ID
             );
 
-            users.push_back(data);
+            users.push_back(data); // add to users
         }
         file.close();
         return users;
     }
-    friend class Exam;
-    friend User performAuth();
+    friend class Exam;         // Exam class needs to access private info of User
+    friend User performAuth(); // same with performAuth function
 };
 
 /* QUESTIONS */
 
 class Question
 {
+    // Basic class for representing question data
 protected:
     string question;
 
@@ -184,6 +194,7 @@ public:
     {
         this->question = question;
     }
+    // not implemented yet, after inheriting they will be
     void start();
     void display();
     bool checkAnswer();
@@ -191,6 +202,8 @@ public:
 
 class ShortAnswerQuestion : public Question
 {
+    // Every object stores correct answer and the answer that user entered
+    // It helps for evaluation of total score
 private:
     string correct_answer;
     string user_answer;
@@ -200,6 +213,7 @@ public:
 
     void input()
     {
+        // called in every question creation proccess
         string question, answer;
 
         cout << "Enter the question: ";
@@ -215,7 +229,9 @@ public:
     }
     void setAnswer(string answer)
     {
-
+        // We need to use toLowerCase
+        // The answer should not be case sensitive
+        // If answer is Mark and user entered mark MaRk -> it must be true answer
         this->toLowerCase(answer);
         this->correct_answer = answer;
     }
@@ -232,6 +248,7 @@ public:
     {
         // Convert string lowercase
         // e.g SANJAR -> sanjar
+        // stolen from stackoverlow
         transform(data.begin(), data.end(), data.begin(),
                   [](unsigned char c)
                   { return std::tolower(c); });
@@ -239,6 +256,7 @@ public:
 
     void start()
     {
+        // Called on examination process
         string user_answer;
 
         this->display();
@@ -271,6 +289,7 @@ public:
         string question_text;
 
         cout << "Enter the question text:";
+        cin.ignore();
         getline(cin, question_text);
         this->setQuestion(question_text);
         this->setVariants();
@@ -348,7 +367,7 @@ private:
 public:
     Exam(User _author) : author(_author){};
     Exam(User _author, string _title) : author(_author), title(_title){};
-    // Functions for adding questions to exam
+
     void includeMultipleChoiceQuestions(vector<MultipleChoice> questions)
     {
         for (MultipleChoice question : questions)
