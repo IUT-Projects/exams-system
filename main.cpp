@@ -277,6 +277,7 @@ public:
 class MultipleChoice : public Question
 {
 private:
+    // Variants (A,B,C)
     vector<string> variants;
     int variants_count, correct_option, user_option{0};
 
@@ -284,6 +285,7 @@ public:
     string type = "multi";
     MultipleChoice() : variants_count(DEFAULT_VARIANTS_NUMBER){};
     MultipleChoice(int _variants_count) : variants_count(_variants_count){};
+
     void input()
     {
         string question_text;
@@ -307,10 +309,10 @@ public:
         for (int i = 0; i < variants_count; i++)
         {
 
-            cout << "Variant" << option << ":";
+            cout << "Variant " << option << ":";
             getline(cin, variant_option);
             variants.push_back(variant_option);
-            option++;
+            option++; // By incrementing value of char, we get next letter. e.g option = A, After ++option we get B
         }
     }
     void showVariants()
@@ -325,7 +327,6 @@ public:
     }
     void setUserAnswer(char user_answer)
     {
-
         this->user_option = toupper(user_answer) % 65;
     }
     void setAnswer(char correct_answer)
@@ -368,6 +369,7 @@ public:
     Exam(User _author) : author(_author){};
     Exam(User _author, string _title) : author(_author), title(_title){};
 
+    // Functions for adding questions directly
     void includeMultipleChoiceQuestions(vector<MultipleChoice> questions)
     {
         for (MultipleChoice question : questions)
@@ -408,9 +410,10 @@ public:
         cout << "Number of multi-choice questions: " << this->multi_questions.size() << endl;
     }
 
-    template <typename T>
+    template <typename T> // T canbe MultipleChoice or ShortAnswer based object
     void shuffleQuestions(vector<T> &questions)
     {
+        // code below stolen from stackoverlow
         auto random_engine = default_random_engine{};
         shuffle(begin(questions), end(questions), random_engine);
     }
