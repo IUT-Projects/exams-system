@@ -24,13 +24,23 @@ const char *banner = R""""(
 )"""";
 
 /* Utility functions */
+void toLowerCase(string &data)
+{
+    // Convert string lowercase
+    // e.g SANJAR -> sanjar
+    // stolen from stackoverlow
+    transform(data.begin(), data.end(), data.begin(),
+              [](unsigned char c)
+              { return std::tolower(c); });
+}
+
 void integerInput(string text, int &value)
 {
     // For handling integer input
     // In asks from user to input until cin result is fully integer
     while (true)
     {
-        cout << text << ":";
+        cout << text << ": ";
         cin >> value;
 
         if (cin.fail()) // if it is not kind of integer
@@ -232,26 +242,17 @@ public:
         // We need to use toLowerCase
         // The answer should not be case sensitive
         // If answer is Mark and user entered mark MaRk -> it must be true answer
-        this->toLowerCase(answer);
+        toLowerCase(answer);
         this->correct_answer = answer;
     }
     void setUserAnswer(string answer)
     {
-        this->toLowerCase(answer);
+        toLowerCase(answer);
         this->user_answer = answer;
     }
     void display()
     {
         cout << "Short Answer question:" << this->question << endl;
-    }
-    void toLowerCase(string &data)
-    {
-        // Convert string lowercase
-        // e.g SANJAR -> sanjar
-        // stolen from stackoverlow
-        transform(data.begin(), data.end(), data.begin(),
-                  [](unsigned char c)
-                  { return std::tolower(c); });
     }
 
     void start()
@@ -266,7 +267,7 @@ public:
         getline(cin, user_answer);
 
         this->setUserAnswer(user_answer);
-        cout << "The answer is -> " << boolalpha << this->checkAnswer() << ", " << correct_answer << "was correct!" << endl;
+        cout << "The answer is -> " << boolalpha << this->checkAnswer() << ", " << correct_answer << " was correct!" << endl;
     }
     bool checkAnswer()
     {
@@ -307,7 +308,7 @@ public:
         for (int i = 0; i < variants_count; i++)
         {
 
-            cout << "Variant" << option << ":";
+            cout << "Variant " << option << ": ";
             getline(cin, variant_option);
             variants.push_back(variant_option);
             option++;
@@ -437,7 +438,7 @@ public:
     {
         int type, number_of_questions;
 
-        integerInput("Enter number of questions that you want: ", number_of_questions);
+        integerInput("Enter number of questions that you want", number_of_questions);
 
         for (int counter = 0; counter < number_of_questions; counter++)
         {
@@ -474,7 +475,8 @@ User performAuth()
     cout << "Do you have an account? (y/n)";
     getline(cin, answer);
 
-    bool hasAccount = (answer == "Y" || answer == "y") ? true : false;
+    toLowerCase(answer);
+    bool hasAccount = (answer == "y" || answer == "yes") ? true : false;
 
     vector<User> users_data = {};
 
@@ -492,13 +494,13 @@ User performAuth()
         while (true)
         {
 
-            cout << "What is your name?";
+            cout << "What is your name? ";
             getline(cin, name);
 
-            cout << "Your password?";
+            cout << "Your password: ";
             getline(cin, password);
 
-            cout << "Select your role:" << endl;
+            cout << "Select your role: " << endl;
             cout << "1. Teacher" << endl;
             cout << "2. Student" << endl;
             integerInput("Your role", role_option);
