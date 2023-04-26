@@ -33,7 +33,7 @@ const string BOLDMAGENTA = "\033[1m\033[35m"; /* Bold Magenta */
 const string BOLDCYAN = "\033[1m\033[36m";    /* Bold Cyan */
 const string BOLDWHITE = "\033[1m\033[37m";   /* Bold White */
 
-const char *banner = R""""(
+const char *banner = R"""(
  _____                          _____           _                
 |  ___|                        /  ___|         | |  
 | |____  ____ _ _ __ ___  ___  \ `--. _   _ ___| |_ ___ _ __ ___ 
@@ -42,7 +42,7 @@ const char *banner = R""""(
 |____/_/\_\__,_|_| |_| |_|___/ \____/ \__, |___/\__\___|_| |_| |_|
                                        __/ |                      
                                       |___/
-)"""";
+)""";
 
 /* Utility functions */
 void toLowerCase(string &data)
@@ -342,7 +342,7 @@ public:
             cout << "Variant " << option << ": ";
             getline(cin, variant_option);
             variants.push_back(variant_option);
-            option++; // By incrementing value of char, we get next letter. e.g option = A, After ++option we get B
+            option++; // By incrementing value of char, we get next letter. e.g option = A, After ++option we get
         }
     }
     void showVariants()
@@ -521,27 +521,28 @@ public:
     static string parseExamIDfromFileName(string path)
     {
         // implement this bitch
+        return path;
     }
-    static vector<Exam> loadExams()
-    {
-        string line;
-        fstream file;
-        vector<Exam> exams;
+    // static vector<Exam> loadExams()
+    // {
+    //     string line;
+    //     fstream file;
+    //     vector<Exam> exams;
 
-        for (const auto &entry : filesystem::directory_iterator(EXAMS_DATA_PATH))
-        {
-            string file_path = entry.path();
-            file.open(file_path);
-            cout << "For file " << file_path << "\n";
-            while (getline(file, line))
-            {
-                cout << line << "\n";
-            }
-            file.close();
-        }
+    //     for (const auto &entry : filesystem::directory_iterator(EXAMS_DATA_PATH))
+    //     {
+    //         string file_path = entry.path();
+    //         file.open(file_path);
+    //         cout << "For file " << file_path << "\n";
+    //         while (getline(file, line))
+    //         {
+    //             cout << line << "\n";
+    //         }
+    //         file.close();
+    //     }
 
-        return exams;
-    }
+    //     return exams;
+    // }
 };
 
 /* Menu */
@@ -673,7 +674,7 @@ void studentMenu(User user)
 int main()
 {
     cout << BOLDGREEN << banner << RESET;
-    vector<Exam> exams = Exam::loadExams();
+    // vector<Exam> exams = Exam::loadExams();
     User user = performAuth();
     while (true)
     {
