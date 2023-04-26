@@ -4,13 +4,34 @@
 #include <random>
 #include <vector>
 #include <sstream>
+#include <filesystem>
 #include <string>
 #include <algorithm>
 #include <cctype>
 #define DEFAULT_VARIANTS_NUMBER 3
 #define USER_DATA_PATH "./data/users.txt"
+#define EXAMS_DATA_PATH "./data/exams/"
 
 using namespace std;
+
+// the following are UBUNTU/LINUX, and MacOS ONLY terminal color codes.
+const string RESET = "\033[0m";
+const string BLACK = "\033[30m";              /* Black */
+const string RED = "\033[31m";                /* Red */
+const string GREEN = "\033[32m";              /* Green */
+const string YELLOW = "\033[33m";             /* Yellow */
+const string BLUE = "\033[34m";               /* Blue */
+const string MAGENTA = "\033[35m";            /* Magenta */
+const string CYAN = "\033[36m";               /* Cyan */
+const string WHITE = "\033[37m";              /* White */
+const string BOLDBLACK = "\033[1m\033[30m";   /* Bold Black */
+const string BOLDRED = "\033[1m\033[31m";     /* Bold Red */
+const string BOLDGREEN = "\033[1m\033[32m";   /* Bold Green */
+const string BOLDYELLOW = "\033[1m\033[33m";  /* Bold Yellow */
+const string BOLDBLUE = "\033[1m\033[34m";    /* Bold Blue */
+const string BOLDMAGENTA = "\033[1m\033[35m"; /* Bold Magenta */
+const string BOLDCYAN = "\033[1m\033[36m";    /* Bold Cyan */
+const string BOLDWHITE = "\033[1m\033[37m";   /* Bold White */
 
 const char *banner = R""""(
  _____                          _____           _                
@@ -47,7 +68,8 @@ void integerInput(string text, int &value)
         {
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "You have entered wrong input!" << endl;
+            cout << "You have entered wrong input!"
+                 << "\n";
         }
         else
         {
@@ -77,6 +99,17 @@ vector<string> split(const string &str, const string &delim)
     return tokens;
 }
 
+template <typename T>
+string objectMemoryAddrAsString(T *obj)
+{
+    // Memory addr. for every object -> unique
+    // This function converts memory addr. to string that will be used unique IDs
+    const void *address = static_cast<const void *>(obj);
+    stringstream current_object_address;
+    current_object_address << address;
+    return current_object_address.str();
+}
+
 void clear()
 // for clearing terminal screen
 {
@@ -96,7 +129,6 @@ string TEACHER = "teacher", STUDENT = "student", ADMIN = "admin";
 
 class User
 {
-    // TODO: option for freshman, sophomore, junior.
 private:
     string name, role, ID, password;
 
@@ -109,7 +141,7 @@ public:
         this->password = password;
         // If user provides id, then init with this id
         // If not, create it
-        this->ID = ID.empty() ? User::createID(this) : ID;
+        this->ID = ID.empty() ? User::createUserID(this) : ID;
     }
     // Getters
     string Name()
@@ -132,32 +164,26 @@ public:
     // Display basic info
     void display()
     {
-        cout << "ID: " << ID << endl;
-        cout << "Name: " << name << endl;
-        cout << "Role: " << role << endl;
+        cout << "ID: " << ID << "\n";
+        cout << "Name: " << name << "\n";
+        cout << "Role: " << role << "\n";
     }
-    static string createID(User *object)
+    static string createUserID(User *user)
     {
-        // Takes object as an argument,
-        // function will get its memory address.
-        // converts it to string
-        // returns all contents from the 5th char (we dont need first chars like 0x)
-        // user id should be unique, and memory addr. also unique.
-        const void *address = static_cast<const void *>(object);
-        stringstream current_object_address;
-        current_object_address << address;
-        string ID = current_object_address.str();
+        // From mem. addr it creates unique user ID
+        string ID = objectMemoryAddrAsString<User>(user);
         // (char)toupper(object->role[0]) - is first letter of role
         // if role is student, we have "S"
-        return (char)toupper(object->role[0]) + ID.substr(5, ID.size());
+        return (char)toupper(user->role[0]) + ID.substr(5, ID.size());
     }
+
     static void addUser(User user)
     {
         // Write user object to data
         fstream file;
         file.open(USER_DATA_PATH, ios::app);
 
-        file << user.name << "|" << user.role << "|" << user.password << "|" << user.ID << endl;
+        file << user.name << "|" << user.role << "|" << user.password << "|" << user.ID << "\n";
 
         file.close();
     }
@@ -186,8 +212,9 @@ public:
         file.close();
         return users;
     }
-    friend class Exam;         // Exam class needs to access private info of User
-    friend User performAuth(); // same with performAuth function
+    friend class Exam;                        // Exam class needs to access private info of User
+    friend string createUserID(User *object); // for access role, private attr
+    friend User performAuth();                // same with performAuth function
 };
 
 /* QUESTIONS */
@@ -252,7 +279,7 @@ public:
     }
     void display()
     {
-        cout << "Short Answer question:" << this->question << endl;
+        cout << "Short Answer question:" << this->question << "\n";
     }
 
     void start()
@@ -267,7 +294,8 @@ public:
         getline(cin, user_answer);
 
         this->setUserAnswer(user_answer);
-        cout << "The answer is -> " << boolalpha << this->checkAnswer() << ", " << correct_answer << " was correct!" << endl;
+        cout << "The answer is -> " << boolalpha << this->checkAnswer() << ", " << correct_answer << " was correct!"
+             << "\n";
     }
     bool checkAnswer()
     {
@@ -291,13 +319,13 @@ public:
     {
         string question_text;
 
-        cout << "Enter the question text:";
+        cout << "Enter the question text: ";
         cin.ignore();
         getline(cin, question_text);
         this->setQuestion(question_text);
         this->setVariants();
         char correct_answer;
-        cout << "Enter correct answer:";
+        cout << "Enter correct answer: ";
         cin >> correct_answer;
         this->setAnswer(correct_answer);
     }
@@ -306,11 +334,12 @@ public:
     {
         char option = 'A';
         string variant_option;
-        cout << "Enter the variants:" << endl;
+        cout << "Enter the variants: "
+             << "\n";
         for (int i = 0; i < variants_count; i++)
         {
 
-            cout << "Variant" << option << ":";
+            cout << "Variant " << option << ": ";
             getline(cin, variant_option);
             variants.push_back(variant_option);
             option++; // By incrementing value of char, we get next letter. e.g option = A, After ++option we get B
@@ -322,7 +351,7 @@ public:
         char option = 'A';
         for (string variant : variants)
         {
-            cout << option << ")" << variant << endl;
+            cout << option << ")" << variant << "\n";
             option++;
         }
     }
@@ -337,7 +366,7 @@ public:
 
     void display()
     {
-        cout << this->question << endl;
+        cout << this->question << "\n";
         showVariants();
     }
 
@@ -345,10 +374,10 @@ public:
     {
         this->display();
         char user_answer;
-        cout << "Your answer is:";
+        cout << "Your answer is: ";
         cin >> user_answer;
         this->setUserAnswer(user_answer);
-        cout << "The answer is -> " << boolalpha << this->checkAnswer() << endl;
+        cout << "The answer is -> " << boolalpha << this->checkAnswer() << "\n";
     }
 
     bool checkAnswer()
@@ -360,6 +389,7 @@ public:
 class Exam
 {
 private:
+    string ID;
     User author;
     string title;
     vector<User> participants;
@@ -367,8 +397,20 @@ private:
     vector<ShortAnswerQuestion> short_answer_questions;
 
 public:
-    Exam(User _author) : author(_author){};
-    Exam(User _author, string _title) : author(_author), title(_title){};
+    Exam(User _author, string ID = "") : author(_author)
+    {
+        // If user provides id, then init with this id
+        // If not, create it
+        this->ID = ID.empty() ? Exam::createExamID(this) : ID;
+    };
+
+    static string createExamID(Exam *exam)
+    {
+        // From mem. addr it creates unique user ID
+        string ID = objectMemoryAddrAsString<Exam>(exam);
+        // It will return E3921893 like unique ID.
+        return "E" + ID.substr(5, ID.size());
+    }
 
     // Functions for adding questions directly
     void includeMultipleChoiceQuestions(vector<MultipleChoice> questions)
@@ -403,12 +445,16 @@ public:
 
     void info()
     {
-        cout << this->title << " exam" << endl;
-        cout << "Author: " << this->author.Name() << endl;
-        cout << "Total number of questions: " << this->getTotalNumberOfQuestions() << endl;
-        cout << "Total number of participants: " << this->participants.size() << endl;
-        cout << "Number of written questions: " << this->short_answer_questions.size() << endl;
-        cout << "Number of multi-choice questions: " << this->multi_questions.size() << endl;
+        cout << "\n"
+             << "\n["
+             << this->title << " exam ]"
+             << "\n";
+        cout << "Author: " << this->author.Name() << "\n";
+        cout << "Total number of questions: " << this->getTotalNumberOfQuestions() << "\n";
+        cout << "Total number of participants: " << this->participants.size() << "\n";
+        cout << "Number of written questions: " << this->short_answer_questions.size() << "\n";
+        cout << "Number of multi-choice questions: " << this->multi_questions.size() << "\n"
+                                                                                        "\n";
     }
 
     template <typename T> // T canbe MultipleChoice or ShortAnswer based object
@@ -420,7 +466,8 @@ public:
     }
     void start(User user)
     {
-        cout << "Exam is started by " << endl;
+        cout << "Exam is started by "
+             << "\n";
         user.display();
 
         this->participants.push_back(user);
@@ -440,6 +487,10 @@ public:
     void insertQuestions()
     {
         int type, number_of_questions;
+
+        cout << "Title of exam: ";
+        cin.ignore();
+        getline(cin, this->title);
 
         integerInput("Enter number of questions that you want", number_of_questions);
 
@@ -461,9 +512,35 @@ public:
             }
             else
             {
-                cout << "Wrong input, try again" << endl;
+                cout << "Wrong input, try again!"
+                     << "\n";
             }
         }
+    }
+
+    static string parseExamIDfromFileName(string path)
+    {
+        // implement this bitch
+    }
+    static vector<Exam> loadExams()
+    {
+        string line;
+        fstream file;
+        vector<Exam> exams;
+
+        for (const auto &entry : filesystem::directory_iterator(EXAMS_DATA_PATH))
+        {
+            string file_path = entry.path();
+            file.open(file_path);
+            cout << "For file " << file_path << "\n";
+            while (getline(file, line))
+            {
+                cout << line << "\n";
+            }
+            file.close();
+        }
+
+        return exams;
     }
 };
 
@@ -487,7 +564,8 @@ User performAuth()
     {
         // there should be logic to checking user input
         // function should search from file, filter user's name and password
-        cout << "You are great!" << endl;
+        cout << "You are great!"
+             << "\n";
     }
     else
     {
@@ -503,9 +581,12 @@ User performAuth()
             cout << "Your password: ";
             getline(cin, password);
 
-            cout << "Select your role: " << endl;
-            cout << "1. Teacher" << endl;
-            cout << "2. Student" << endl;
+            cout << "Select your role: "
+                 << "\n";
+            cout << "1. Teacher"
+                 << "\n";
+            cout << "2. Student"
+                 << "\n";
             integerInput("Your role", role_option);
 
             if (role_option == 1)
@@ -520,14 +601,16 @@ User performAuth()
             }
             else
             {
-                cout << "Input again!" << endl;
+                cout << "Input again!"
+                     << "\n";
             }
         }
 
         user.setData(name, role, password);
-        cout << "[ Save that information ]" << endl;
-        cout << "Your ID: " << user.getID() << endl;
-        cout << "Your Password: " << user.password << endl;
+        cout << "[ Save that information ]"
+             << "\n";
+        cout << "Your ID: " << user.getID() << "\n";
+        cout << "Your Password: " << user.password << "\n";
         User::addUser(user);
     }
 
@@ -541,25 +624,31 @@ void teacherMenu(User user)
 
     while (isRunning)
     {
-        cout << "\n[ MENU ]" << endl;
-        cout << "1. Create exam" << endl;
-        cout << "2. List of exams" << endl;
-        cout << "3. User info" << endl;
-        cout << "(other) Quit" << endl;
+        cout << "\n[ MENU ]"
+             << "\n";
+        cout << "1. Create exam"
+             << "\n";
+        cout << "2. List of exams"
+             << "\n";
+        cout << "3. User info"
+             << "\n";
+        cout << "(other) Quit"
+             << "\n";
         integerInput("Your option", option);
         clear();
 
         if (option == 1)
         {
-            Exam exam(user, "Calculus 2");
+            Exam exam(user);
             exam.insertQuestions();
-            cout << endl;
+            cout << "\n";
             exam.start(user);
             exam.info();
         }
         else if (option == 2)
         {
-            cout << "List of exams: " << endl;
+            cout << "List of exams: "
+                 << "\n";
         }
         else if (option == 3)
         {
@@ -567,7 +656,8 @@ void teacherMenu(User user)
         }
         else
         {
-            cout << "Good bye!" << endl;
+            cout << "Good bye!"
+                 << "\n";
             exit(0);
         }
     }
@@ -575,18 +665,19 @@ void teacherMenu(User user)
 
 void studentMenu(User user)
 {
-    cout << "Student menu!" << endl;
+    cout << "Student menu!"
+         << "\n";
     user.display();
 }
 
 int main()
 {
-    cout << banner;
-    vector<User> users = User::loadUsers();
+    cout << BOLDGREEN << banner << RESET;
+    vector<Exam> exams = Exam::loadExams();
     User user = performAuth();
     while (true)
     {
-        cout << "User role is: " << user.Role() << endl;
+        cout << "User role is: " << user.Role() << "\n";
 
         if (user.Role() == TEACHER)
         {
@@ -600,7 +691,8 @@ int main()
         }
         else
         {
-            cout << "Good bye!" << endl;
+            cout << "Good bye!"
+                 << "\n";
             exit(0);
         }
     }
