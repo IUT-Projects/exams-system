@@ -234,7 +234,7 @@ public:
     // not implemented yet, after inheriting they will be
     void start();
     void display();
-    bool checkAnswer();
+    void checkAnswer();
 };
 
 class ShortAnswerQuestion : public Question
@@ -244,6 +244,7 @@ class ShortAnswerQuestion : public Question
 private:
     string correct_answer;
     string user_answer;
+    int score = 0;
 
 public:
     string type = "written";
@@ -279,28 +280,27 @@ public:
     }
     void display()
     {
-        cout << "Short Answer question:" << this->question << "\n";
+        cout << "Short Answer question: " << this->question << "\n";
     }
 
     void start()
     {
         // Called on examination process
-        string user_answer;
+        string answer;
 
         this->display();
 
         cout << "Your answer: ";
-        cin.ignore();
-        getline(cin, user_answer);
+        getline(cin, answer);
 
-        this->setUserAnswer(user_answer);
-        cout << "The answer is -> " << boolalpha << this->checkAnswer() << ", " << correct_answer << " was correct!"
-             << "\n";
+        this->setUserAnswer(answer);
+        this->checkAnswer();
     }
-    bool checkAnswer()
+    void checkAnswer()
     {
-        return this->correct_answer == this->user_answer;
+        if (this->correct_answer == this->user_answer) {this->score++;}
     }
+    friend class Exam;
 };
 
 class MultipleChoice : public Question
@@ -309,6 +309,7 @@ private:
     // Variants (A,B,C)
     vector<string> variants;
     int variants_count, correct_option, user_option{0};
+    int score = 0;
 
 public:
     string type = "multi";
@@ -377,13 +378,14 @@ public:
         cout << "Your answer is: ";
         cin >> user_answer;
         this->setUserAnswer(user_answer);
-        cout << "The answer is -> " << boolalpha << this->checkAnswer() << "\n";
+        this->checkAnswer();
     }
 
-    bool checkAnswer()
+    void checkAnswer()
     {
-        return (correct_option == user_option);
+        if (this->correct_option == this->user_option) {this->score++;}
     }
+    friend class Exam;
 };
 
 class Exam
@@ -543,9 +545,37 @@ public:
 
     //     return exams;
     // }
+    void displayResults() {
+        int total_score = 0;
+        for (ShortAnswerQuestion question : short_answer_questions)
+        {
+            total_score += question.score;
+        }
+        for (MultipleChoice question : multi_questions)
+        {
+            total_score += question.score;
+        }
+        cout << "[ RESULTS ]" << endl;
+        cout << "Total Score: " << total_score << "/" << getTotalNumberOfQuestions() << endl;
+        if (!short_answer_questions.empty()) {
+            cout << "Answers for short questions:" << endl;
+            for (int i = 0; i < short_answer_questions.size(); i++) {
+                cout << i + 1 << ". " << short_answer_questions[i].correct_answer << endl;
+            }
+        }
+        if (!multi_questions.empty()) {
+            cout << "Answers for multiple choice questions: " << endl;
+            for (int i = 0; i < multi_questions.size(); i++) {
+                cout << i + 1 << ". " << multi_questions[i].correct_option << endl;
+            }
+        }
+    }
 };
 
 /* Menu */
+void studentMenu(User user);
+void teacherMenu(User user);
+
 
 User performAuth()
 {
@@ -557,16 +587,33 @@ User performAuth()
     getline(cin, answer);
 
     toLowerCase(answer);
-    bool hasAccount = (answer == "y" || answer == "yes") ? true : false;
+    bool hasAccount = (answer == "y" || answer == "yes");
 
     vector<User> users_data = {};
 
-    if (hasAccount)
-    {
-        // there should be logic to checking user input
-        // function should search from file, filter user's name and password
-        cout << "You are great!"
-             << "\n";
+    if (hasAccount) {
+        login:
+            string ID, password;
+            cout << "Your ID: ";
+            cin >> ID;
+            cout << "Your Password: ";
+            cin >> password;
+            vector<User> user = User::loadUsers();
+            user.erase(remove_if(user.begin(), user.end(),
+                                  [&ID, &password](const User& u)
+                                  {return u.ID != ID || u.password != password;}), user.end());
+            if (user.empty()) {
+                cout << "ID or password is incorrect. Please try again." << endl;
+                goto login;
+            }
+            else {
+                if (user[0].Role() == STUDENT) {
+                    studentMenu(user[0]);
+                }
+                else if (user[0].Role() == TEACHER) {
+                    teacherMenu(user[0]);
+                }
+            }
     }
     else
     {
@@ -644,7 +691,7 @@ void teacherMenu(User user)
             exam.insertQuestions();
             cout << "\n";
             exam.start(user);
-            exam.info();
+            exam.displayResults();
         }
         else if (option == 2)
         {
@@ -666,9 +713,45 @@ void teacherMenu(User user)
 
 void studentMenu(User user)
 {
-    cout << "Student menu!"
-         << "\n";
-    user.display();
+    int option;
+    bool isRunning = true;
+
+    while (isRunning)
+    {
+        cout << "\n[ MENU ]"
+             << "\n";
+        cout << "1. Start exam"
+             << "\n";
+        cout << "2. Results"
+             << "\n";
+        cout << "3. User info"
+             << "\n";
+        cout << "(other) Quit"
+             << "\n";
+        integerInput("Your option", option);
+        clear();
+
+        if (option == 1)
+        {
+            Exam exam(user);
+            exam.start(user);
+        }
+        else if (option == 2)
+        {
+            cout << "Results: "
+                 << "\n";
+        }
+        else if (option == 3)
+        {
+            user.display();
+        }
+        else
+        {
+            cout << "Good bye!"
+                 << "\n";
+            exit(0);
+        }
+    }
 }
 
 int main()
