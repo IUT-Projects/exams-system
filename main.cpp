@@ -212,9 +212,8 @@ public:
         file.close();
         return users;
     }
-    friend class Exam;                        // Exam class needs to access private info of User
-    friend string createUserID(User *object); // for access role, private attr
-    friend User performAuth();                // same with performAuth function
+    friend class Exam;         // Exam class needs to access private info of User
+    friend User performAuth(); // same with performAuth function
 };
 
 /* QUESTIONS */
@@ -291,10 +290,11 @@ public:
         this->display();
 
         cout << "Your answer: ";
-        getline(cin, answer);
+        getline(cin, user_answer);
 
-        this->setUserAnswer(answer);
-        this->checkAnswer();
+        this->setUserAnswer(user_answer);
+        cout << "The answer is -> " << boolalpha << this->checkAnswer() << ", " << correct_answer << " was correct!"
+             << "\n";
     }
     void checkAnswer()
     {
@@ -758,6 +758,12 @@ int main()
 {
     cout << BOLDGREEN << banner << RESET;
     // vector<Exam> exams = Exam::loadExams();
+
+    cout << User::loadUsers().size() << endl;
+    for (User user : User::loadUsers())
+    {
+        user.display();
+    }
     User user = performAuth();
     while (true)
     {

@@ -1,1 +1,5 @@
 Abduaziz Ziyodov|teacher|$password|Tc9b919040
+adsadsa|teacher|2121|Td08f0f8e0
+Abduaziz|teacher|1|Tc47930640
+as|teacher|1|Tc1550ede0
+a|teacher|a|Te83710ad0
