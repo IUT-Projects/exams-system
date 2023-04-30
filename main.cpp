@@ -44,6 +44,19 @@ const char *banner = R"""(
                                       |___/
 )""";
 
+const char *loginBanner = R"""(
+ _    ___   ___ ___ _  _ 
+| |  / _ \ / __|_ _| \| |
+| |_| (_) | (_ || || .` |
+|____\___/ \___|___|_|\_|
+)""";
+const char *registerBanner = R"""(
+ ___ ___ ___ ___ ___ _____ ___ ___ 
+| _ \ __/ __|_ _/ __|_   _| __| _ \
+|   / _| (_ || |\__ \ | | | _||   /
+|_|_\___\___|___|___/ |_| |___|_|_\
+)""";
+
 /* Utility functions */
 void toLowerCase(string &data)
 {
@@ -212,8 +225,11 @@ public:
         file.close();
         return users;
     }
-    friend class Exam;         // Exam class needs to access private info of User
-    friend User performAuth(); // same with performAuth function
+    friend class Exam; // Exam class needs to access private info of User
+
+    // some function for auth needs access to private members
+    friend User performLogin();
+    friend User performRegister();
 };
 
 /* QUESTIONS */
@@ -243,7 +259,7 @@ class ShortAnswerQuestion : public Question
 private:
     string correct_answer;
     string user_answer;
-    int score = 0;
+    bool correctAnswered;
 
 public:
     string type = "written";
@@ -293,12 +309,11 @@ public:
         getline(cin, user_answer);
 
         this->setUserAnswer(user_answer);
-        cout << "The answer is -> " << boolalpha << this->checkAnswer() << ", " << correct_answer << " was correct!"
-             << "\n";
+        this->correctAnswered = this->checkAnswer();
     }
-    void checkAnswer()
+    bool checkAnswer()
     {
-        if (this->correct_answer == this->user_answer) {this->score++;}
+        return (this->correct_answer == this->user_answer);
     }
     friend class Exam;
 };
@@ -309,7 +324,7 @@ private:
     // Variants (A,B,C)
     vector<string> variants;
     int variants_count, correct_option, user_option{0};
-    int score = 0;
+    bool correctAnswered = 0;
 
 public:
     string type = "multi";
@@ -378,12 +393,12 @@ public:
         cout << "Your answer is: ";
         cin >> user_answer;
         this->setUserAnswer(user_answer);
-        this->checkAnswer();
+        this->correctAnswered = this->checkAnswer();
     }
 
-    void checkAnswer()
+    bool checkAnswer()
     {
-        if (this->correct_option == this->user_option) {this->score++;}
+        return (this->correct_option == this->user_option);
     }
     friend class Exam;
 };
@@ -520,52 +535,32 @@ public:
         }
     }
 
-    static string parseExamIDfromFileName(string path)
+    void displayResults()
     {
-        // implement this bitch
-        return path;
-    }
-    // static vector<Exam> loadExams()
-    // {
-    //     string line;
-    //     fstream file;
-    //     vector<Exam> exams;
-
-    //     for (const auto &entry : filesystem::directory_iterator(EXAMS_DATA_PATH))
-    //     {
-    //         string file_path = entry.path();
-    //         file.open(file_path);
-    //         cout << "For file " << file_path << "\n";
-    //         while (getline(file, line))
-    //         {
-    //             cout << line << "\n";
-    //         }
-    //         file.close();
-    //     }
-
-    //     return exams;
-    // }
-    void displayResults() {
         int total_score = 0;
         for (ShortAnswerQuestion question : short_answer_questions)
         {
-            total_score += question.score;
+            total_score += question.correctAnswered;
         }
         for (MultipleChoice question : multi_questions)
         {
-            total_score += question.score;
+            total_score += question.correctAnswered;
         }
         cout << "[ RESULTS ]" << endl;
         cout << "Total Score: " << total_score << "/" << getTotalNumberOfQuestions() << endl;
-        if (!short_answer_questions.empty()) {
+        if (!short_answer_questions.empty())
+        {
             cout << "Answers for short questions:" << endl;
-            for (int i = 0; i < short_answer_questions.size(); i++) {
+            for (int i = 0; i < short_answer_questions.size(); i++)
+            {
                 cout << i + 1 << ". " << short_answer_questions[i].correct_answer << endl;
             }
         }
-        if (!multi_questions.empty()) {
+        if (!multi_questions.empty())
+        {
             cout << "Answers for multiple choice questions: " << endl;
-            for (int i = 0; i < multi_questions.size(); i++) {
+            for (int i = 0; i < multi_questions.size(); i++)
+            {
                 cout << i + 1 << ". " << multi_questions[i].correct_option << endl;
             }
         }
@@ -573,13 +568,90 @@ public:
 };
 
 /* Menu */
-void studentMenu(User user);
-void teacherMenu(User user);
 
+User performRegister()
+{
+    clear();
+    cout << BOLDBLUE << registerBanner << RESET << endl;
+
+    User user;
+    int role_option;
+    string name, role, password;
+
+    cout << "What is your name? ";
+    getline(cin, name);
+
+    cout << "Your password: ";
+    getline(cin, password);
+
+    cout << "Select your role: "
+         << "\n";
+    cout << "1. Teacher"
+         << "\n";
+    cout << "2. Student"
+         << "\n";
+    integerInput("Your role", role_option);
+
+selectRole:
+    if (role_option == 1)
+    {
+        role = TEACHER;
+    }
+    else if (role_option == 2)
+    {
+        role = STUDENT;
+    }
+    else
+    {
+        cout << "Input again!"
+             << "\n";
+        goto selectRole;
+    }
+
+    user.setData(name, role, password);
+    cout << "[ Save that information ]"
+         << "\n";
+    cout << "Your ID: " << user.getID() << "\n";
+    cout << "Your Password: " << user.password << "\n";
+    User::addUser(user);
+    return user;
+}
+
+User performLogin()
+{
+    clear();
+    cout << BOLDYELLOW << loginBanner << RESET << endl;
+    User *user = NULL;
+
+login:
+    string ID, password;
+    cout << "Your ID: ";
+    cin >> ID;
+    cout << "Your Password: ";
+    cin >> password;
+    vector<User> users = User::loadUsers();
+
+    bool isExist = false;
+
+    for (User user : users)
+    {
+        if (user.ID == ID && user.password == password)
+        {
+            isExist = true;
+            return user;
+        }
+    }
+
+    if (!isExist)
+    {
+        cout << "ID or password is incorrect. Please try again." << endl;
+        goto login;
+    }
+    return *user; // will not be executed
+}
 
 User performAuth()
 {
-    User user;
     string answer;
     bool isCompleted = false;
 
@@ -589,80 +661,7 @@ User performAuth()
     toLowerCase(answer);
     bool hasAccount = (answer == "y" || answer == "yes");
 
-    vector<User> users_data = {};
-
-    if (hasAccount) {
-        login:
-            string ID, password;
-            cout << "Your ID: ";
-            cin >> ID;
-            cout << "Your Password: ";
-            cin >> password;
-            vector<User> user = User::loadUsers();
-            user.erase(remove_if(user.begin(), user.end(),
-                                  [&ID, &password](const User& u)
-                                  {return u.ID != ID || u.password != password;}), user.end());
-            if (user.empty()) {
-                cout << "ID or password is incorrect. Please try again." << endl;
-                goto login;
-            }
-            else {
-                if (user[0].Role() == STUDENT) {
-                    studentMenu(user[0]);
-                }
-                else if (user[0].Role() == TEACHER) {
-                    teacherMenu(user[0]);
-                }
-            }
-    }
-    else
-    {
-        int role_option;
-        string name, role, password;
-
-        while (true)
-        {
-
-            cout << "What is your name? ";
-            getline(cin, name);
-
-            cout << "Your password: ";
-            getline(cin, password);
-
-            cout << "Select your role: "
-                 << "\n";
-            cout << "1. Teacher"
-                 << "\n";
-            cout << "2. Student"
-                 << "\n";
-            integerInput("Your role", role_option);
-
-            if (role_option == 1)
-            {
-                role = TEACHER;
-                break;
-            }
-            else if (role_option == 2)
-            {
-                role = STUDENT;
-                break;
-            }
-            else
-            {
-                cout << "Input again!"
-                     << "\n";
-            }
-        }
-
-        user.setData(name, role, password);
-        cout << "[ Save that information ]"
-             << "\n";
-        cout << "Your ID: " << user.getID() << "\n";
-        cout << "Your Password: " << user.password << "\n";
-        User::addUser(user);
-    }
-
-    return user;
+    return (hasAccount) ? performLogin() : performRegister();
 }
 
 void teacherMenu(User user)
@@ -757,14 +756,18 @@ void studentMenu(User user)
 int main()
 {
     cout << BOLDGREEN << banner << RESET;
-    // vector<Exam> exams = Exam::loadExams();
+    cout << "The number of users: " << User::loadUsers().size() << endl
+         << endl;
 
-    cout << User::loadUsers().size() << endl;
     for (User user : User::loadUsers())
     {
         user.display();
+        cout << endl;
     }
+
     User user = performAuth();
+    cout << "Display user: ";
+    user.display();
     while (true)
     {
         cout << "User role is: " << user.Role() << "\n";
