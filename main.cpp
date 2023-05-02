@@ -4,7 +4,6 @@
 #include <random>
 #include <vector>
 #include <sstream>
-#include <filesystem>
 #include <string>
 #include <algorithm>
 #include <cctype>
@@ -77,7 +76,7 @@ void integerInput(string text, int &value)
         cout << text << ": ";
         cin >> value;
 
-        if (cin.fail()) // if it is not kind of integer
+        if (cin.fail() || value >= 0) // if it is not kind of integer
         {
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -503,7 +502,7 @@ public:
     }
     void insertQuestions()
     {
-        int type, number_of_questions;
+        int type, number_of_questions, number_of_variants;
 
         cout << "Title of exam: ";
         cin.ignore();
@@ -514,10 +513,10 @@ public:
         for (int counter = 0; counter < number_of_questions; counter++)
         {
             integerInput("Type of question -> Multiple Choice(1) or Written(2)", type);
-
             if (type == 1)
             {
-                MultipleChoice question;
+            integerInput("Enter number of variants: ", number_of_variants);
+                MultipleChoice question(number_of_variants);
                 question.input();
                 this->includeMultipleChoiceQuestion(question);
             }
@@ -572,7 +571,7 @@ public:
 User performRegister()
 {
     clear();
-    cout << BOLDBLUE << registerBanner << RESET << endl;
+    // cout << BOLDBLUE << registerBanner << RESET << endl;
 
     User user;
     int role_option;
@@ -620,7 +619,7 @@ selectRole:
 User performLogin()
 {
     clear();
-    cout << BOLDYELLOW << loginBanner << RESET << endl;
+    // cout << BOLDYELLOW << loginBanner << RESET << endl;
     User *user = NULL;
 
 login:
@@ -755,7 +754,7 @@ void studentMenu(User user)
 
 int main()
 {
-    cout << BOLDGREEN << banner << RESET;
+    // cout << BOLDGREEN << banner << RESET;
     cout << "The number of users: " << User::loadUsers().size() << endl
          << endl;
 
