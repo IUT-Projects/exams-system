@@ -241,13 +241,8 @@ protected:
 
 public:
     Question(){};
-    void setQuestion(string question)
-    {
-        this->question = question;
-    }
     // not implemented yet, after inheriting they will be
     void start();
-    void display();
     void checkAnswer();
 };
 
@@ -256,9 +251,8 @@ class ShortAnswerQuestion : public Question
     // Every object stores correct answer and the answer that user entered
     // It helps for evaluation of total score
 private:
-    string correct_answer;
-    string user_answer;
-    bool correctAnswered;
+    bool correctAnswered = 0;
+    string correct_answer, user_answer;
 
 public:
     string type = "written";
@@ -276,7 +270,6 @@ public:
         cout << "Enter the short answer: ";
         getline(cin, answer);
 
-        this->setQuestion(question);
         this->setAnswer(answer);
     }
     void setAnswer(string answer)
@@ -309,6 +302,9 @@ public:
 
         this->setUserAnswer(user_answer);
         this->correctAnswered = this->checkAnswer();
+        cout << boolalpha << correctAnswered << endl;
+        cout << "correct one " << correct_answer << endl;
+        cout << "user answer " << user_answer << endl;
     }
     bool checkAnswer()
     {
@@ -320,7 +316,6 @@ public:
 class MultipleChoice : public Question
 {
 private:
-    // Variants (A,B,C)
     vector<string> variants;
     int variants_count, correct_option, user_option{0};
     bool correctAnswered = 0;
@@ -332,12 +327,9 @@ public:
 
     void input()
     {
-        string question_text;
-
         cout << "Enter the question text: ";
         cin.ignore();
-        getline(cin, question_text);
-        this->setQuestion(question_text);
+        getline(cin, this->question);
         this->setVariants();
         char correct_answer;
     enterCorrectVariant:
@@ -353,14 +345,17 @@ public:
 
     bool checkVariantExists(char &variant)
     {
+        cout << variant << endl;
         char option = 'A';
 
+        cout << this->variants.size() << endl;
         for (int iter = 0; iter < this->variants.size(); iter++)
         {
             if (option == toupper(variant))
             {
                 return true;
             }
+            option++;
         }
         cout << "Variant does not exist!" << endl;
         return false;
@@ -398,16 +393,13 @@ public:
     {
         this->correct_option = toupper(correct_answer) % 65;
     }
-
-    void display()
-    {
-        cout << this->question << "\n";
-        showVariants();
-    }
-
     void start()
     {
-        this->display();
+        cout << "HELLO WORLD!"
+             << "\n";
+        cout << this->question << "\n";
+        this->showVariants();
+
         char user_answer;
         cout << "Your answer is: ";
         cin >> user_answer;
@@ -433,7 +425,7 @@ private:
     vector<ShortAnswerQuestion> short_answer_questions;
 
 public:
-    Exam(User _author, string ID = "") : author(_author)
+    Exam()
     {
         // If user provides id, then init with this id
         // If not, create it
@@ -520,9 +512,11 @@ public:
             question.start();
         }
     }
-    void insertQuestions()
+    void insertQuestions(User author)
     {
         int type, number_of_questions, number_of_variants;
+
+        this->author = author;
 
         cout << "Title of exam: ";
         cin.ignore();
@@ -559,10 +553,13 @@ public:
         int total_score = 0;
         for (ShortAnswerQuestion question : short_answer_questions)
         {
+            question.display();
+            cout << "CORRECT: " << question.correctAnswered << endl;
             total_score += question.correctAnswered;
         }
         for (MultipleChoice question : multi_questions)
         {
+            cout << "CORRECT: " << question.correctAnswered << endl;
             total_score += question.correctAnswered;
         }
         cout << "[ RESULTS ]" << endl;
@@ -705,8 +702,8 @@ void teacherMenu(User user)
 
         if (option == 1)
         {
-            Exam exam(user);
-            exam.insertQuestions();
+            Exam exam;
+            exam.insertQuestions(user);
             cout << "\n";
             exam.start(user);
             exam.displayResults();
@@ -751,7 +748,7 @@ void studentMenu(User user)
 
         if (option == 1)
         {
-            Exam exam(user);
+            Exam exam;
             exam.start(user);
         }
         else if (option == 2)
@@ -784,7 +781,8 @@ int main()
         cout << endl;
     }
 
-    User user = performAuth();
+    User user = User::loadUsers().at(0); // FOR TESTING PURPOSE ONLY
+
     cout << "Display user: ";
     user.display();
     while (true)
