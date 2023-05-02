@@ -76,7 +76,7 @@ void integerInput(string text, int &value)
         cout << text << ": ";
         cin >> value;
 
-        if (cin.fail() || value >= 0) // if it is not kind of integer
+        if (cin.fail() || value <= 0) // if it is not kind of integer
         {
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -340,11 +340,31 @@ public:
         this->setQuestion(question_text);
         this->setVariants();
         char correct_answer;
-        cout << "Enter correct answer: ";
+    enterCorrectVariant:
+        cout << "Enter correct variant: ";
         cin >> correct_answer;
+        if (!this->checkVariantExists(correct_answer))
+        {
+            goto enterCorrectVariant;
+        }
+
         this->setAnswer(correct_answer);
     }
 
+    bool checkVariantExists(char &variant)
+    {
+        char option = 'A';
+
+        for (int iter = 0; iter < this->variants.size(); iter++)
+        {
+            if (option == toupper(variant))
+            {
+                return true;
+            }
+        }
+        cout << "Variant does not exist!" << endl;
+        return false;
+    }
     void setVariants()
     {
         char option = 'A';
@@ -515,7 +535,7 @@ public:
             integerInput("Type of question -> Multiple Choice(1) or Written(2)", type);
             if (type == 1)
             {
-            integerInput("Enter number of variants: ", number_of_variants);
+                integerInput("Enter number of variants: ", number_of_variants);
                 MultipleChoice question(number_of_variants);
                 question.input();
                 this->includeMultipleChoiceQuestion(question);
@@ -571,7 +591,7 @@ public:
 User performRegister()
 {
     clear();
-    // cout << BOLDBLUE << registerBanner << RESET << endl;
+    cout << BOLDBLUE << registerBanner << RESET << endl;
 
     User user;
     int role_option;
@@ -619,7 +639,7 @@ selectRole:
 User performLogin()
 {
     clear();
-    // cout << BOLDYELLOW << loginBanner << RESET << endl;
+    cout << BOLDYELLOW << loginBanner << RESET << endl;
     User *user = NULL;
 
 login:
@@ -754,7 +774,7 @@ void studentMenu(User user)
 
 int main()
 {
-    // cout << BOLDGREEN << banner << RESET;
+    cout << BOLDGREEN << banner << RESET;
     cout << "The number of users: " << User::loadUsers().size() << endl
          << endl;
 
