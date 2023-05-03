@@ -297,12 +297,14 @@ public:
     }
     void start()
     {
+        char user_ans[200];
+
         cout << "Short Answer question: " << this->question << "\n";
         cout << "Your answer: ";
-        cin.ignore(0);
-        getline(cin, user_answer);
+        cin.getline(user_ans,sizeof(user_ans));
+        // getline(cin, _user_answer);
 
-        this->setUserAnswer(user_answer);
+        this->setUserAnswer(user_ans);
         this->correctAnswered = this->checkAnswer();
         this->debugDetails();
     }
