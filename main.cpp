@@ -1,10 +1,15 @@
 // imports
 #include <fstream>
 #include <sstream>
+// constants
 #define DEFAULT_VARIANTS_NUMBER 3
 #define MAX_USER_ANSWER_LENGTH 128
 #define USER_DATA_PATH "./data/users.txt"
 #define EXAMS_DATA_PATH "./data/exams/"
+#define RESULTS_DATA_PATH "./data/results.txt"
+#define MULTI_CHOICE_QUESTIONS_DATA_PATH "./data/questions/multi.txt"
+#define SHORT_ANSWER_QUESTIONS_DATA_PATH "./data/questions/short.txt"
+
 
 #include "components/utils.h"
 #include "components/banners.h"
@@ -110,6 +115,76 @@ public:
 
 /* QUESTIONS */
 
+class Result
+{
+
+private:
+    int total_score{0}, max_possible_score;
+    string exam_id, user_id;
+
+public:
+    Result(){};
+    Result(string _exam_id, string _user_id) : exam_id(_exam_id), user_id(_user_id) {}
+    void incrementScore()
+    {
+        this->total_score++;
+    }
+    int getTotalScore()
+    {
+        return this->total_score;
+    }
+
+    void setTotalScore(int score)
+    {
+        // allowed for file operations
+        this->total_score = score;
+    }
+
+    void setMaxPossibleScore(int score)
+    {
+        this->max_possible_score = score;
+    }
+
+    void display()
+    {
+        cout << "[RESULT]" << endl;
+        cout << "Exam ID: " << exam_id << endl;
+        cout << "User ID: " << user_id << endl;
+        cout << "Total score: " << total_score << "/" << max_possible_score << endl;
+    }
+
+    void writeToFile()
+    {
+        fstream file;
+        file.open(RESULTS_DATA_PATH, ios::app);
+
+        file << exam_id << "|" << user_id << "|" << total_score << "|" << max_possible_score << "\n";
+
+        file.close();
+    }
+
+    static vector<Result> loadResults()
+    {
+        string line;
+        vector<Result> results; // saving output result
+
+        fstream file;
+        file.open(RESULTS_DATA_PATH, ios::in);
+
+        while (getline(file, line)) // one result_data IN one single line
+        {
+            vector<string> result_data = split(line, "|"); // split line by | and get vector of strings
+
+            Result result(result_data[0], result_data[1]);
+            result.setTotalScore(stoi(result_data[2]));
+            result.setMaxPossibleScore(stoi(result_data[3]));
+            results.push_back(result); // add to results
+        }
+        file.close();
+        return results;
+    }
+};
+
 class Question
 {
     // Basic class for representing question data
@@ -119,8 +194,10 @@ protected:
 public:
     Question(){};
     // not implemented yet, after inheriting they will be
-    void start();
+    void start(Result result);
     void checkAnswer();
+    void writeToFile();
+    friend class Exam;
 };
 
 class ShortAnswerQuestion : public Question
@@ -128,27 +205,14 @@ class ShortAnswerQuestion : public Question
     // Every object stores correct answer and the answer that user entered
     // It helps for evaluation of total score
 private:
-    bool correctAnswered = 0;
-    string correct_answer, user_answer;
+    string exam_id, correct_answer, user_answer;
 
 public:
     string type = "written";
-    void debugDetails()
-    {
-        cout << endl
-             << endl
-             << "[DEBUG]" << endl;
-        cout << "Question text " << question << endl;
-        cout << "User answer " << user_answer << endl;
-        cout << "Correct Answer " << correct_answer << endl;
-        cout << "Correct Answered " << boolalpha << correctAnswered << endl
-             << endl;
-    }
 
     void input()
     {
         // called in every question creation proccess
-
         cout << "Enter the question: ";
         cin.ignore();
 
@@ -160,20 +224,7 @@ public:
 
         this->setAnswer(answer);
     }
-    void setAnswer(string answer)
-    {
-        // We need to use toLowerCase
-        // The answer should not be case sensitive
-        // If answer is Mark and user entered mark MaRk -> it must be true answer
-        toLowerCase(answer);
-        this->correct_answer = answer;
-    }
-    void setUserAnswer(string answer)
-    {
-        toLowerCase(answer);
-        this->user_answer = answer;
-    }
-    void start()
+    void start(Result &result)
     {
         char userAnswer[MAX_USER_ANSWER_LENGTH];
 
@@ -182,43 +233,46 @@ public:
         cin.getline(userAnswer, sizeof(userAnswer));
 
         this->setUserAnswer(userAnswer);
-        this->correctAnswered = this->checkAnswer();
-        this->debugDetails();
+
+        if (this->checkAnswer())
+        {
+            result.incrementScore();
+        }
     }
+
+    void setAnswer(string answer)
+    {
+        // Convert all answers to lowercase string
+        toLowerCase(answer);
+        this->correct_answer = answer;
+    }
+    void setUserAnswer(string answer)
+    {
+        toLowerCase(answer);
+        this->user_answer = answer;
+    }
+
     bool checkAnswer()
     {
         return (this->correct_answer == this->user_answer);
     }
-    friend class Exam;
 };
 
 class MultipleChoice : public Question
 {
 private:
+    string exam_id;
     vector<string> variants;
-    int variants_count, correct_option, user_option{0};
-    bool correctAnswered = 0;
+    int variants_count, correct_option, user_option;
 
 public:
     string type = "multi";
     MultipleChoice() : variants_count(DEFAULT_VARIANTS_NUMBER){};
     MultipleChoice(int _variants_count) : variants_count(_variants_count){};
 
-    void debugDetails()
-    {
-        cout << endl
-             << "[DEBUG]" << endl;
-        cout << "Question text " << question << endl;
-        cout << "Variant Count " << variants_count << endl;
-        cout << "Correct Option " << correct_option << endl;
-        cout << "User option " << user_option << endl;
-        cout << "Correct Answered " << boolalpha << correctAnswered << endl
-             << endl;
-    }
-
     void input()
     {
-        integerInput("Enter number of variants: ", this->variants_count);
+        integerInput("Enter number of variants", this->variants_count);
         cout << "Enter the question text: ";
         cin.ignore();
         getline(cin, this->question);
@@ -233,6 +287,37 @@ public:
         }
 
         this->setAnswer(correct_answer);
+    }
+
+    void start(Result &result)
+    {
+        cout << this->question << "\n";
+        this->showVariants();
+
+        char user_answer;
+        cout << "Your answer is: ";
+        cin >> user_answer;
+        this->setUserAnswer(user_answer);
+
+        if (this->checkAnswer())
+        {
+            result.incrementScore();
+        }
+    }
+    void setVariants()
+    {
+        char option = 'A';
+        string variant_option;
+        cout << "Enter the variants: "
+             << "\n";
+        for (int i = 0; i < variants_count; i++)
+        {
+
+            cout << "Variant " << option << ": ";
+            getline(cin, variant_option);
+            variants.push_back(variant_option);
+            option++; // By incrementing value of char, we get next letter. e.g option = A, After ++option we get
+        }
     }
 
     bool checkVariantExists(char &variant)
@@ -250,21 +335,7 @@ public:
         cout << "Variant does not exist!" << endl;
         return false;
     }
-    void setVariants()
-    {
-        char option = 'A';
-        string variant_option;
-        cout << "Enter the variants: "
-             << "\n";
-        for (int i = 0; i < variants_count; i++)
-        {
 
-            cout << "Variant " << option << ": ";
-            getline(cin, variant_option);
-            variants.push_back(variant_option);
-            option++; // By incrementing value of char, we get next letter. e.g option = A, After ++option we get
-        }
-    }
     void showVariants()
     {
         char option = 'A';
@@ -282,25 +353,11 @@ public:
     {
         this->correct_option = toupper(correct_answer) % 65;
     }
-    void start()
-    {
-        cout << this->question << "\n";
-        this->showVariants();
-
-        char user_answer;
-        cout << "Your answer is: ";
-        cin >> user_answer;
-        this->setUserAnswer(user_answer);
-        this->correctAnswered = this->checkAnswer();
-
-        this->debugDetails();
-    }
 
     bool checkAnswer()
     {
         return (this->correct_option == this->user_option);
     }
-    friend class Exam;
 };
 
 class Exam
@@ -320,66 +377,7 @@ public:
         // If not, create it
         this->ID = ID.empty() ? Exam::createExamID(this) : ID;
     };
-    static string createExamID(Exam *exam)
-    {
-        // From mem. addr it creates unique user ID
-        string ID = objectMemoryAddrAsString<Exam>(exam);
-        // It will return E3921893 like unique ID.
-        return "E" + ID.substr(5, ID.size());
-    }
-
-    // Functions for adding questions directly
-    void includeMultipleChoiceQuestions(vector<MultipleChoice> questions)
-    {
-        for (MultipleChoice question : questions)
-        {
-
-            this->multi_questions.push_back(question);
-        }
-    }
-    void includeShortAnswerQuestions(vector<ShortAnswerQuestion> questions)
-    {
-        for (ShortAnswerQuestion question : questions)
-        {
-
-            this->short_answer_questions.push_back(question);
-        }
-    }
-    void includeMultipleChoiceQuestion(MultipleChoice question)
-    {
-        this->multi_questions.push_back(question);
-    }
-    void includeShortAnswerQuestion(ShortAnswerQuestion question)
-    {
-        this->short_answer_questions.push_back(question);
-    }
-
-    int getTotalNumberOfQuestions()
-    {
-        return this->multi_questions.size() + this->short_answer_questions.size();
-    }
-
-    void info()
-    {
-        cout << "\n"
-             << "\n["
-             << this->title << " exam ]"
-             << "\n";
-        cout << "Author: " << this->author.Name() << "\n";
-        cout << "Total number of questions: " << this->getTotalNumberOfQuestions() << "\n";
-        cout << "Total number of participants: " << this->participants.size() << "\n";
-        cout << "Number of written questions: " << this->short_answer_questions.size() << "\n";
-        cout << "Number of multi-choice questions: " << this->multi_questions.size() << "\n"
-                                                                                        "\n";
-    }
-
-    template <typename T> // T canbe MultipleChoice or ShortAnswer based object
-    void shuffleQuestions(vector<T> &questions)
-    {
-        // code below stolen from stackoverlow
-        auto random_engine = default_random_engine{};
-        shuffle(begin(questions), end(questions), random_engine);
-    }
+    // Main function for starting Exam
     void start(User user)
     {
         cout << "Exam is started by "
@@ -391,16 +389,23 @@ public:
         this->shuffleQuestions(this->multi_questions);
         this->shuffleQuestions(this->short_answer_questions);
 
+        Result result(this->ID, user.getID());
+
+        result.setMaxPossibleScore(this->getTotalNumberOfQuestions());
+
         for (MultipleChoice question : multi_questions)
         {
-            question.start();
+            question.start(result);
         }
         cin.ignore();
 
         for (ShortAnswerQuestion question : short_answer_questions)
         {
-            question.start();
+            question.start(result);
         }
+
+        this->displayResults(result);
+        result.writeToFile();
     }
     void insertQuestions(User author)
     {
@@ -437,39 +442,79 @@ public:
         }
     }
 
-    void displayResults()
+    // Utility functions
+    static string createExamID(Exam *exam)
     {
-        cout << "Displaying Results" << endl;
-        //     int total_score = 0;
-        //     for (ShortAnswerQuestion question : short_answer_questions)
-        //     {
-        //         question.display();
-        //         total_score += question.correctAnswered;
-        //     }
-        //     for (MultipleChoice question : multi_questions)
-        //     {
-        //         total_score += question.correctAnswered;
-        //     }
-        //     cout << "[ RESULTS ]" << endl;
-        //     cout << "Total Score: " << total_score << "/" << getTotalNumberOfQuestions() << endl;
-        //     if (!short_answer_questions.empty())
-        //     {
-        //         cout << "Answers for short questions:" << endl;
-        //         for (int i = 0; i < short_answer_questions.size(); i++)
-        //         {
-        //             cout << i + 1 << ". " << short_answer_questions[i].correct_answer << endl;
-        //         }
-        //     }
-        //     if (!multi_questions.empty())
-        //     {
-        //         cout << "Answers for multiple choice questions: " << endl;
-        //         for (int i = 0; i < multi_questions.size(); i++)
-        //         {
-        //             cout << i + 1 << ". " << multi_questions[i].correct_option << endl;
-        //         }
-        //     }
+        // From mem. addr it creates unique user ID
+        string ID = objectMemoryAddrAsString<Exam>(exam);
+        // It will return E3921893 like unique ID.
+        return "E" + ID.substr(5, ID.size());
     }
+
+    void info()
+    {
+        cout << "\n"
+             << "\n["
+             << this->title << " exam ]"
+             << "\n";
+        cout << "Author: " << this->author.Name() << "\n";
+        cout << "Total number of questions: " << this->getTotalNumberOfQuestions() << "\n";
+        cout << "Total number of participants: " << this->participants.size() << "\n";
+        cout << "Number of written questions: " << this->short_answer_questions.size() << "\n";
+        cout << "Number of multi-choice questions: " << this->multi_questions.size() << "\n"
+                                                                                        "\n";
+    }
+
+    template <typename T> // T can be MultipleChoice || ShortAnswer object
+    void shuffleQuestions(vector<T> &questions)
+    {
+        // code below stolen from stackoverlow
+        auto random_engine = default_random_engine{};
+        shuffle(begin(questions), end(questions), random_engine);
+    }
+
+    // Setters getters(for including questions)
+    void includeMultipleChoiceQuestions(vector<MultipleChoice> questions)
+    {
+        for (MultipleChoice question : questions)
+        {
+
+            this->multi_questions.push_back(question);
+        }
+    }
+    void includeShortAnswerQuestions(vector<ShortAnswerQuestion> questions)
+    {
+        for (ShortAnswerQuestion question : questions)
+        {
+
+            this->short_answer_questions.push_back(question);
+        }
+    }
+    void includeMultipleChoiceQuestion(MultipleChoice question)
+    {
+        this->multi_questions.push_back(question);
+    }
+    void includeShortAnswerQuestion(ShortAnswerQuestion question)
+    {
+        this->short_answer_questions.push_back(question);
+    }
+
+    int getTotalNumberOfQuestions()
+    {
+        return this->multi_questions.size() + this->short_answer_questions.size();
+    }
+
+    void displayResults(Result result);
 };
+
+void Exam::displayResults(Result result)
+{
+    cout << BOLDGREEN << "[ RESULTS ]" << RESET << endl;
+
+    cout << "Total score: " << result.getTotalScore() << "/" << this->getTotalNumberOfQuestions() << endl;
+
+    // not implemented yet!
+}
 
 /* Menu */
 
@@ -594,7 +639,6 @@ void teacherMenu(User user)
             exam.insertQuestions(user);
             cout << "\n";
             exam.start(user);
-            exam.displayResults();
         }
         else if (option == 2)
         {
@@ -671,8 +715,10 @@ int main()
 
     User user = User::loadUsers().at(0); // FOR TESTING PURPOSE ONLY
 
-    cout << "Display user: ";
-    user.display();
+    for (Result res : Result::loadResults())
+    {
+        res.display();
+    }
 
     while (true)
     {
