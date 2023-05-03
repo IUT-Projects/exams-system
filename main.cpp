@@ -256,17 +256,27 @@ private:
 
 public:
     string type = "written";
+    void debugDetails()
+    {
+        cout << endl
+             << endl
+             << "[DEBUG]" << endl;
+        cout << "Question text " << question << endl;
+        cout << "User answer " << user_answer << endl;
+        cout << "Correct Answer " << correct_answer << endl;
+        cout << "Correct Answered " << boolalpha << correctAnswered << endl;
+    }
 
     void input()
     {
         // called in every question creation proccess
-        string question, answer;
 
         cout << "Enter the question: ";
         cin.ignore();
 
-        getline(cin, question);
+        getline(cin, this->question);
 
+        string answer;
         cout << "Enter the short answer: ";
         getline(cin, answer);
 
@@ -285,26 +295,16 @@ public:
         toLowerCase(answer);
         this->user_answer = answer;
     }
-    void display()
-    {
-        cout << "Short Answer question: " << this->question << "\n";
-    }
-
     void start()
     {
-        // Called on examination process
-        string answer;
-
-        this->display();
-
+        cout << "Short Answer question: " << this->question << "\n";
         cout << "Your answer: ";
+        cin.ignore(0);
         getline(cin, user_answer);
 
         this->setUserAnswer(user_answer);
         this->correctAnswered = this->checkAnswer();
-        cout << boolalpha << correctAnswered << endl;
-        cout << "correct one " << correct_answer << endl;
-        cout << "user answer " << user_answer << endl;
+        this->debugDetails();
     }
     bool checkAnswer()
     {
@@ -324,6 +324,17 @@ public:
     string type = "multi";
     MultipleChoice() : variants_count(DEFAULT_VARIANTS_NUMBER){};
     MultipleChoice(int _variants_count) : variants_count(_variants_count){};
+
+    void debugDetails()
+    {
+        cout << endl
+             << "[DEBUG]" << endl;
+        cout << "Question text " << question << endl;
+        cout << "Variant Count " << variants_count << endl;
+        cout << "Correct Option " << correct_option << endl;
+        cout << "User option " << user_option << endl;
+        cout << "Correct Answered " << boolalpha << correctAnswered << endl;
+    }
 
     void input()
     {
@@ -405,6 +416,8 @@ public:
         cin >> user_answer;
         this->setUserAnswer(user_answer);
         this->correctAnswered = this->checkAnswer();
+
+        this->debugDetails();
     }
 
     bool checkAnswer()
@@ -431,7 +444,6 @@ public:
         // If not, create it
         this->ID = ID.empty() ? Exam::createExamID(this) : ID;
     };
-
     static string createExamID(Exam *exam)
     {
         // From mem. addr it creates unique user ID
@@ -550,36 +562,35 @@ public:
 
     void displayResults()
     {
-        int total_score = 0;
-        for (ShortAnswerQuestion question : short_answer_questions)
-        {
-            question.display();
-            cout << "CORRECT: " << question.correctAnswered << endl;
-            total_score += question.correctAnswered;
-        }
-        for (MultipleChoice question : multi_questions)
-        {
-            cout << "CORRECT: " << question.correctAnswered << endl;
-            total_score += question.correctAnswered;
-        }
-        cout << "[ RESULTS ]" << endl;
-        cout << "Total Score: " << total_score << "/" << getTotalNumberOfQuestions() << endl;
-        if (!short_answer_questions.empty())
-        {
-            cout << "Answers for short questions:" << endl;
-            for (int i = 0; i < short_answer_questions.size(); i++)
-            {
-                cout << i + 1 << ". " << short_answer_questions[i].correct_answer << endl;
-            }
-        }
-        if (!multi_questions.empty())
-        {
-            cout << "Answers for multiple choice questions: " << endl;
-            for (int i = 0; i < multi_questions.size(); i++)
-            {
-                cout << i + 1 << ". " << multi_questions[i].correct_option << endl;
-            }
-        }
+        cout << "Displaying Results" << endl;
+        //     int total_score = 0;
+        //     for (ShortAnswerQuestion question : short_answer_questions)
+        //     {
+        //         question.display();
+        //         total_score += question.correctAnswered;
+        //     }
+        //     for (MultipleChoice question : multi_questions)
+        //     {
+        //         total_score += question.correctAnswered;
+        //     }
+        //     cout << "[ RESULTS ]" << endl;
+        //     cout << "Total Score: " << total_score << "/" << getTotalNumberOfQuestions() << endl;
+        //     if (!short_answer_questions.empty())
+        //     {
+        //         cout << "Answers for short questions:" << endl;
+        //         for (int i = 0; i < short_answer_questions.size(); i++)
+        //         {
+        //             cout << i + 1 << ". " << short_answer_questions[i].correct_answer << endl;
+        //         }
+        //     }
+        //     if (!multi_questions.empty())
+        //     {
+        //         cout << "Answers for multiple choice questions: " << endl;
+        //         for (int i = 0; i < multi_questions.size(); i++)
+        //         {
+        //             cout << i + 1 << ". " << multi_questions[i].correct_option << endl;
+        //         }
+        //     }
     }
 };
 
