@@ -1,138 +1,15 @@
 // imports
-#include <iostream>
 #include <fstream>
-#include <random>
-#include <vector>
 #include <sstream>
-#include <string>
-#include <algorithm>
-#include <cctype>
 #define DEFAULT_VARIANTS_NUMBER 3
+#define MAX_USER_ANSWER_LENGTH 128
 #define USER_DATA_PATH "./data/users.txt"
 #define EXAMS_DATA_PATH "./data/exams/"
 
+#include "components/utils.h"
+#include "components/banners.h"
+
 using namespace std;
-
-// the following are UBUNTU/LINUX, and MacOS ONLY terminal color codes.
-const string RESET = "\033[0m";
-const string BLACK = "\033[30m";              /* Black */
-const string RED = "\033[31m";                /* Red */
-const string GREEN = "\033[32m";              /* Green */
-const string YELLOW = "\033[33m";             /* Yellow */
-const string BLUE = "\033[34m";               /* Blue */
-const string MAGENTA = "\033[35m";            /* Magenta */
-const string CYAN = "\033[36m";               /* Cyan */
-const string WHITE = "\033[37m";              /* White */
-const string BOLDBLACK = "\033[1m\033[30m";   /* Bold Black */
-const string BOLDRED = "\033[1m\033[31m";     /* Bold Red */
-const string BOLDGREEN = "\033[1m\033[32m";   /* Bold Green */
-const string BOLDYELLOW = "\033[1m\033[33m";  /* Bold Yellow */
-const string BOLDBLUE = "\033[1m\033[34m";    /* Bold Blue */
-const string BOLDMAGENTA = "\033[1m\033[35m"; /* Bold Magenta */
-const string BOLDCYAN = "\033[1m\033[36m";    /* Bold Cyan */
-const string BOLDWHITE = "\033[1m\033[37m";   /* Bold White */
-
-const char *banner = R"""(
- _____                          _____           _                
-|  ___|                        /  ___|         | |  
-| |____  ____ _ _ __ ___  ___  \ `--. _   _ ___| |_ ___ _ __ ___ 
-|  __\ \/ / _` | '_ ` _ \/ __|  `--. \ | | / __| __/ _ \ '_ ` _ \
-| |___>  < (_| | | | | | \__ \ /\__/ / |_| \__ \ ||  __/ | | | | |
-|____/_/\_\__,_|_| |_| |_|___/ \____/ \__, |___/\__\___|_| |_| |_|
-                                       __/ |                      
-                                      |___/
-)""";
-
-const char *loginBanner = R"""(
- _    ___   ___ ___ _  _ 
-| |  / _ \ / __|_ _| \| |
-| |_| (_) | (_ || || .` |
-|____\___/ \___|___|_|\_|
-)""";
-const char *registerBanner = R"""(
- ___ ___ ___ ___ ___ _____ ___ ___ 
-| _ \ __/ __|_ _/ __|_   _| __| _ \
-|   / _| (_ || |\__ \ | | | _||   /
-|_|_\___\___|___|___/ |_| |___|_|_\
-)""";
-
-/* Utility functions */
-void toLowerCase(string &data)
-{
-    // Convert string lowercase
-    // e.g SANJAR -> sanjar
-    // stolen from stackoverlow
-    transform(data.begin(), data.end(), data.begin(),
-              [](unsigned char c)
-              { return std::tolower(c); });
-}
-
-void integerInput(string text, int &value)
-{
-    // For handling integer input
-    // In asks from user to input until cin result is fully integer
-    while (true)
-    {
-        cout << text << ": ";
-        cin >> value;
-
-        if (cin.fail() || value <= 0) // if it is not kind of integer
-        {
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            cout << "You have entered wrong input!"
-                 << "\n";
-        }
-        else
-        {
-            // everything is ok
-            break;
-        }
-    }
-}
-
-vector<string> split(const string &str, const string &delim)
-{
-    // stolen from stackoverflow
-    // split word -> vector of tokens by some delimeter
-    // e.g "Abduaziz,Ziyodov"" -> {"Abduaziz", "Ziyodov"}
-    vector<string> tokens;
-    size_t prev = 0, pos = 0;
-    do
-    {
-        pos = str.find(delim, prev);
-        if (pos == string::npos)
-            pos = str.length();
-        string token = str.substr(prev, pos - prev);
-        if (!token.empty())
-            tokens.push_back(token);
-        prev = pos + delim.length();
-    } while (pos < str.length() && prev < str.length());
-    return tokens;
-}
-
-template <typename T>
-string objectMemoryAddrAsString(T *obj)
-{
-    // Memory addr. for every object -> unique
-    // This function converts memory addr. to string that will be used unique IDs
-    const void *address = static_cast<const void *>(obj);
-    stringstream current_object_address;
-    current_object_address << address;
-    return current_object_address.str();
-}
-
-void clear()
-// for clearing terminal screen
-{
-#if defined _WIN32
-    system("cls");
-#elif defined(__LINUX__) || defined(__gnu_linux__) || defined(__linux__)
-    system("clear");
-#elif defined(__APPLE__)
-    system("clear");
-#endif
-}
 
 /* Users & Register */
 
@@ -264,7 +141,8 @@ public:
         cout << "Question text " << question << endl;
         cout << "User answer " << user_answer << endl;
         cout << "Correct Answer " << correct_answer << endl;
-        cout << "Correct Answered " << boolalpha << correctAnswered << endl;
+        cout << "Correct Answered " << boolalpha << correctAnswered << endl
+             << endl;
     }
 
     void input()
@@ -297,14 +175,13 @@ public:
     }
     void start()
     {
-        char user_ans[200];
+        char userAnswer[MAX_USER_ANSWER_LENGTH];
 
         cout << "Short Answer question: " << this->question << "\n";
         cout << "Your answer: ";
-        cin.getline(user_ans,sizeof(user_ans));
-        // getline(cin, _user_answer);
+        cin.getline(userAnswer, sizeof(userAnswer));
 
-        this->setUserAnswer(user_ans);
+        this->setUserAnswer(userAnswer);
         this->correctAnswered = this->checkAnswer();
         this->debugDetails();
     }
@@ -335,11 +212,13 @@ public:
         cout << "Variant Count " << variants_count << endl;
         cout << "Correct Option " << correct_option << endl;
         cout << "User option " << user_option << endl;
-        cout << "Correct Answered " << boolalpha << correctAnswered << endl;
+        cout << "Correct Answered " << boolalpha << correctAnswered << endl
+             << endl;
     }
 
     void input()
     {
+        integerInput("Enter number of variants: ", this->variants_count);
         cout << "Enter the question text: ";
         cin.ignore();
         getline(cin, this->question);
@@ -358,10 +237,8 @@ public:
 
     bool checkVariantExists(char &variant)
     {
-        cout << variant << endl;
         char option = 'A';
 
-        cout << this->variants.size() << endl;
         for (int iter = 0; iter < this->variants.size(); iter++)
         {
             if (option == toupper(variant))
@@ -390,7 +267,6 @@ public:
     }
     void showVariants()
     {
-
         char option = 'A';
         for (string variant : variants)
         {
@@ -408,8 +284,6 @@ public:
     }
     void start()
     {
-        cout << "HELLO WORLD!"
-             << "\n";
         cout << this->question << "\n";
         this->showVariants();
 
@@ -521,6 +395,8 @@ public:
         {
             question.start();
         }
+        cin.ignore();
+
         for (ShortAnswerQuestion question : short_answer_questions)
         {
             question.start();
@@ -528,7 +404,7 @@ public:
     }
     void insertQuestions(User author)
     {
-        int type, number_of_questions, number_of_variants;
+        int type, number_of_questions;
 
         this->author = author;
 
@@ -543,8 +419,7 @@ public:
             integerInput("Type of question -> Multiple Choice(1) or Written(2)", type);
             if (type == 1)
             {
-                integerInput("Enter number of variants: ", number_of_variants);
-                MultipleChoice question(number_of_variants);
+                MultipleChoice question;
                 question.input();
                 this->includeMultipleChoiceQuestion(question);
             }
@@ -798,6 +673,7 @@ int main()
 
     cout << "Display user: ";
     user.display();
+
     while (true)
     {
         cout << "User role is: " << user.Role() << "\n";
