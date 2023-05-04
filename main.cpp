@@ -6,7 +6,7 @@
 #define DEFAULT_VARIANTS_NUMBER 3
 #define MAX_USER_ANSWER_LENGTH 128
 #define USER_DATA_PATH "./data/users.txt"
-#define EXAMS_DATA_PATH "./data/exams/"
+#define EXAMS_DATA_PATH "./data/exams.txt"
 #define RESULTS_DATA_PATH "./data/results.txt"
 #define MULTI_CHOICE_QUESTIONS_DATA_PATH "./data/questions/multi.txt"
 #define SHORT_ANSWER_QUESTIONS_DATA_PATH "./data/questions/short.txt"
@@ -134,7 +134,7 @@ public:
     bool checkAnswer();
 
     void writeToFile();
-    static vector<ShortAnswerQuestion> loadShortAnswerQuestions();
+    static vector<ShortAnswerQuestion> load();
 };
 
 class MultipleChoice : public Question
@@ -158,7 +158,7 @@ public:
     bool checkAnswer();
 
     void writeToFile();
-    static vector<MultipleChoice> loadMultipleChoiceQuestions();
+    static vector<MultipleChoice> load();
 };
 
 class Exam
@@ -167,7 +167,6 @@ private:
     string ID;
     User author;
     string title;
-    vector<User> participants;
     vector<MultipleChoice> multi_questions;
     vector<ShortAnswerQuestion> short_answer_questions;
 
@@ -193,6 +192,16 @@ public:
     void includeShortAnswerQuestion(ShortAnswerQuestion question);
     int getTotalNumberOfQuestions();
     void displayResults(Result result);
+
+    // For file operations
+    void setTitle(string title);
+    void setID(string ID);
+    void getAuthorFromFile(string author_id);
+
+    void loadQuestions();
+
+    void writeToFile();
+    static vector<Exam> loadExams();
 };
 
 // USER
@@ -334,7 +343,7 @@ void ShortAnswerQuestion::writeToFile()
     file.close();
 }
 
-vector<ShortAnswerQuestion> ShortAnswerQuestion::loadShortAnswerQuestions()
+vector<ShortAnswerQuestion> ShortAnswerQuestion::load()
 {
     string line;
     vector<ShortAnswerQuestion> questions; // saving output result
@@ -408,7 +417,7 @@ void MultipleChoice::writeToFile()
     file.close();
 }
 
-vector<MultipleChoice> MultipleChoice::loadMultipleChoiceQuestions()
+vector<MultipleChoice> MultipleChoice::load()
 {
     string line;
     vector<MultipleChoice> questions; // saving output result
@@ -537,8 +546,6 @@ void Exam::start(User user)
          << "\n";
     user.display();
 
-    this->participants.push_back(user);
-
     this->shuffleQuestions(this->multi_questions);
     this->shuffleQuestions(this->short_answer_questions);
 
@@ -615,7 +622,6 @@ void Exam::info()
          << "\n";
     cout << "Author: " << this->author.Name() << "\n";
     cout << "Total number of questions: " << this->getTotalNumberOfQuestions() << "\n";
-    cout << "Total number of participants: " << this->participants.size() << "\n";
     cout << "Number of written questions: " << this->short_answer_questions.size() << "\n";
     cout << "Number of multi-choice questions: " << this->multi_questions.size() << "\n"
                                                                                     "\n";
@@ -658,6 +664,83 @@ void Exam::includeShortAnswerQuestion(ShortAnswerQuestion question)
 int Exam::getTotalNumberOfQuestions()
 {
     return this->multi_questions.size() + this->short_answer_questions.size();
+}
+
+void Exam::writeToFile()
+{
+    // Write user object to data
+    fstream file;
+    file.open(EXAMS_DATA_PATH, ios::app);
+
+    file << ID << "|" << title << "|" << author.getID() << "|\n";
+
+    file.close();
+};
+
+void Exam::setTitle(string title)
+{
+    this->title = title;
+}
+void Exam::setID(string ID)
+{
+    this->ID = ID;
+}
+
+void Exam::getAuthorFromFile(string author_id)
+{
+    for (User user : User::loadUsers())
+    {
+        if (user.getID() == author_id)
+        {
+            this->author = user;
+        }
+    }
+}
+
+void Exam::loadQuestions()
+{
+    for (MultipleChoice question : MultipleChoice::load())
+    {
+        if (question.exam_id == this->ID)
+        {
+            this->includeMultipleChoiceQuestion(question);
+        }
+    }
+
+    for (ShortAnswerQuestion question : ShortAnswerQuestion::load())
+    {
+        if (question.exam_id == this->ID)
+        {
+            this->includeShortAnswerQuestion(question);
+        }
+    }
+}
+
+vector<Exam>
+Exam::loadExams()
+{
+    string line;
+    vector<Exam> exams; // saving output result
+
+    fstream file;
+    file.open(EXAMS_DATA_PATH, ios::in);
+
+    while (getline(file, line))
+    {
+        vector<string> exam_data = split(line, "|");
+        Exam exam;
+
+        exam.setID(exam_data[0]);
+        exam.setTitle(exam_data[1]);
+
+        exam.getAuthorFromFile(exam_data[2]);
+
+        exam.loadQuestions();
+
+        exams.push_back(exam);
+    }
+    file.close();
+    return exams;
 }
 
 void Exam::displayResults(Result result)
@@ -791,8 +874,9 @@ void teacherMenu(User user)
         {
             Exam exam;
             exam.insertQuestions(user);
+            exam.writeToFile();
+
             cout << "\n";
-            exam.start(user);
         }
         else if (option == 2)
         {
