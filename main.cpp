@@ -107,21 +107,22 @@ class Question
 {
     // Basic class for representing question data
 protected:
-    string question;
+    string question, exam_id;
 
 public:
     Question(){};
     // not implemented yet, after inheriting they will be
     void start(Result result);
     void checkAnswer();
-    void writeToFile();
+    void setExamID(string ID);
+    void setQuestion(string question);
     friend class Exam;
 };
 
 class ShortAnswerQuestion : public Question
 {
 private:
-    string exam_id, correct_answer, user_answer;
+    string correct_answer, user_answer;
 
 public:
     string type = "written";
@@ -131,12 +132,14 @@ public:
     void setAnswer(string answer);
     void setUserAnswer(string answer);
     bool checkAnswer();
+
+    void writeToFile();
+    static vector<ShortAnswerQuestion> loadShortAnswerQuestions();
 };
 
 class MultipleChoice : public Question
 {
 private:
-    string exam_id;
     vector<string> variants;
     int variants_count, correct_option, user_option;
 
@@ -153,6 +156,9 @@ public:
     void setUserAnswer(char user_answer);
     void setAnswer(char correct_answer);
     bool checkAnswer();
+
+    void writeToFile();
+    static vector<MultipleChoice> loadMultipleChoiceQuestions();
 };
 
 class Exam
@@ -295,6 +301,14 @@ vector<Result> Result::loadResults()
 
 // QUESTIONS
 
+void Question::setExamID(string ID)
+{
+    this->exam_id = ID;
+}
+void Question::setQuestion(string question_text)
+{
+    this->question = question_text;
+}
 void ShortAnswerQuestion::input()
 {
     // called in every question creation proccess
@@ -309,6 +323,42 @@ void ShortAnswerQuestion::input()
 
     this->setAnswer(answer);
 }
+
+void ShortAnswerQuestion::writeToFile()
+{
+    fstream file;
+    file.open(SHORT_ANSWER_QUESTIONS_DATA_PATH, ios::app);
+
+    file << exam_id << "|" << question << "|" << correct_answer << "\n";
+
+    file.close();
+}
+
+vector<ShortAnswerQuestion> ShortAnswerQuestion::loadShortAnswerQuestions()
+{
+    string line;
+    vector<ShortAnswerQuestion> questions; // saving output result
+
+    fstream file;
+    file.open(SHORT_ANSWER_QUESTIONS_DATA_PATH, ios::in);
+
+    while (getline(file, line)) // one result_data IN one single line
+    {
+        vector<string> question_data = split(line, "|"); // split line by | and get vector of strings
+
+        ShortAnswerQuestion question;
+
+        question.setExamID(question_data[0]);
+        question.setQuestion(question_data[1]);
+        question.setAnswer(question_data[2]);
+
+        questions.push_back(question); // add to results
+    }
+    file.close();
+
+    return questions;
+}
+
 void ShortAnswerQuestion::start(Result &result)
 {
     char userAnswer[MAX_USER_ANSWER_LENGTH];
@@ -325,7 +375,10 @@ void ShortAnswerQuestion::start(Result &result)
         result.incrementScore();
     }
 }
-
+bool ShortAnswerQuestion::checkAnswer()
+{
+    return (this->correct_answer == this->user_answer);
+}
 void ShortAnswerQuestion::setAnswer(string answer)
 {
     // Convert all answers to lowercase string
@@ -338,9 +391,52 @@ void ShortAnswerQuestion::setUserAnswer(string answer)
     this->user_answer = answer;
 }
 
-bool ShortAnswerQuestion::checkAnswer()
+void MultipleChoice::writeToFile()
 {
-    return (this->correct_answer == this->user_answer);
+    fstream file;
+    file.open(MULTI_CHOICE_QUESTIONS_DATA_PATH, ios::app);
+
+    file << exam_id << "|" << question << "|" << correct_option << "|" << variants_count;
+
+    for (int iter = 0; iter < variants_count; iter++)
+    {
+        file << "|" << variants.at(iter);
+    }
+
+    file << endl;
+
+    file.close();
+}
+
+vector<MultipleChoice> MultipleChoice::loadMultipleChoiceQuestions()
+{
+    string line;
+    vector<MultipleChoice> questions; // saving output result
+
+    fstream file;
+    file.open(MULTI_CHOICE_QUESTIONS_DATA_PATH, ios::in);
+
+    while (getline(file, line)) // one result_data IN one single line
+    {
+        vector<string> question_data = split(line, "|"); // split line by | and get vector of strings
+
+        MultipleChoice question;
+
+        question.setExamID(question_data[0]);
+        question.setQuestion(question_data[1]);
+        question.setAnswer(stoi(question_data[2]));
+        question.variants_count = stoi(question_data[3]);
+
+        for (int iter = 0; iter < question.variants_count; iter++)
+        {
+            question.variants.push_back(question_data[4 + iter]);
+            // explanation: after 3 index(from 4), there will be variants
+        }
+
+        questions.push_back(question); // add to results
+    }
+    file.close();
+    return questions;
 }
 
 void MultipleChoice::input()
@@ -482,14 +578,18 @@ void Exam::insertQuestions(User author)
         if (type == 1)
         {
             MultipleChoice question;
+            question.setExamID(this->ID);
             question.input();
             this->includeMultipleChoiceQuestion(question);
+            question.writeToFile();
         }
         else if (type == 2)
         {
             ShortAnswerQuestion question;
+            question.setExamID(this->ID);
             question.input();
             this->includeShortAnswerQuestion(question);
+            question.writeToFile();
         }
         else
         {
@@ -759,7 +859,7 @@ int main()
 {
     cout << BOLDGREEN << banner << RESET;
     cout << "W is " << WIDTH << " H is " << HEIGHT << endl;
- 
+
     cout << "The number of users: " << User::loadUsers().size() << endl
          << endl;
 
@@ -770,11 +870,6 @@ int main()
     }
 
     User user = User::loadUsers().at(0); // FOR TESTING PURPOSE ONLY
-
-    for (Result res : Result::loadResults())
-    {
-        res.display();
-    }
 
     while (true)
     {
