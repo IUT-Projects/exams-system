@@ -1,5 +1,6 @@
 // imports
 #include <fstream>
+#include <iomanip>
 #include <sstream>
 // constants
 #define DEFAULT_VARIANTS_NUMBER 3
@@ -14,6 +15,11 @@
 #include "components/banners.h"
 
 using namespace std;
+
+// Get terminal size
+
+const int WIDTH = getTerminalSize().first;
+const int HEIGHT = getTerminalSize().second;
 
 // User roles as variable
 string TEACHER = "teacher", STUDENT = "student", ADMIN = "admin";
@@ -307,7 +313,8 @@ void ShortAnswerQuestion::start(Result &result)
 {
     char userAnswer[MAX_USER_ANSWER_LENGTH];
 
-    cout << "Short Answer question: " << this->question << "\n";
+    cout << endl
+         << "Short Answer question: " << this->question << "\n";
     cout << "Your answer: ";
     cin.getline(userAnswer, sizeof(userAnswer));
 
@@ -357,7 +364,8 @@ enterCorrectVariant:
 
 void MultipleChoice::start(Result &result)
 {
-    cout << this->question << "\n";
+    cout << endl
+         << this->question << "\n";
     this->showVariants();
 
     char user_answer;
@@ -554,7 +562,8 @@ int Exam::getTotalNumberOfQuestions()
 
 void Exam::displayResults(Result result)
 {
-    cout << BOLDGREEN << "[ RESULTS ]" << RESET << endl;
+    cout << endl
+         << BOLDGREEN << setw(25) << "[ RESULTS ]" << RESET << setw(25) << endl;
 
     cout << "Total score: " << result.getTotalScore() << "/" << this->getTotalNumberOfQuestions() << endl;
 
@@ -749,6 +758,8 @@ void studentMenu(User user)
 int main()
 {
     cout << BOLDGREEN << banner << RESET;
+    cout << "W is " << WIDTH << " H is " << HEIGHT << endl;
+ 
     cout << "The number of users: " << User::loadUsers().size() << endl
          << endl;
 
