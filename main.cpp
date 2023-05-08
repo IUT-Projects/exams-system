@@ -13,6 +13,7 @@
 
 #include "components/utils.h"
 #include "components/banners.h"
+#include "components/password_masking.h"
 
 using namespace std;
 
