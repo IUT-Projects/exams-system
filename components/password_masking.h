@@ -4,8 +4,6 @@
 
 using namespace std;
 
-void getPassword();
-
 #if defined _WIN32
 #include <conio.h>
 void getPassword(char password[MAX_PASSWORD_LENGTH + 1])
