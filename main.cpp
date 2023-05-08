@@ -17,11 +17,6 @@
 
 using namespace std;
 
-// Get terminal size
-
-const int WIDTH = getTerminalSize().first;
-const int HEIGHT = getTerminalSize().second;
-
 // User roles as variable
 string TEACHER = "teacher", STUDENT = "student", ADMIN = "admin";
 
@@ -29,10 +24,13 @@ string TEACHER = "teacher", STUDENT = "student", ADMIN = "admin";
 Definition of all classes.
 */
 
+class Exam;
+
 class User
 {
 private:
     string name, role, ID, password;
+    vector<Exam> exams;
 
 public:
     User(){};
@@ -56,6 +54,7 @@ public:
 
     // Display basic info
     void display();
+    vector<Exam> getExams();
     static string createUserID(User *user);
     static void addUser(User user);
     static vector<User> loadUsers();
@@ -99,9 +98,20 @@ public:
         this->max_possible_score = score;
     }
 
+    string getUserId()
+    {
+        return user_id;
+    }
+
+    string getExamId()
+    {
+        return exam_id;
+    }
+
     void display();
     void writeToFile();
     static vector<Result> loadResults();
+    static vector<Result> loadResultsByExam(Exam exam);
 };
 
 class Question
@@ -193,16 +203,19 @@ public:
     void includeShortAnswerQuestion(ShortAnswerQuestion question);
     int getTotalNumberOfQuestions();
     void displayResults(Result result);
+    string getTitle();
+    User getAuthor();
 
     // For file operations
     void setTitle(string title);
     void setID(string ID);
     void getAuthorFromFile(string author_id);
-
     void loadQuestions();
 
     void writeToFile();
     static vector<Exam> loadExams();
+
+    friend vector<Result> Result::loadResultsByExam(Exam exam);
 };
 
 // USER
@@ -213,6 +226,21 @@ void User::display()
     cout << "Name: " << name << "\n";
     cout << "Role: " << role << "\n";
 }
+
+vector<Exam> User::getExams()
+{
+    this->exams.clear();
+    for (Exam exam : Exam::loadExams())
+    {
+        if (exam.getAuthor().getID() == this->getID())
+        {
+            this->exams.push_back(exam);
+        }
+    }
+
+    return this->exams;
+}
+
 string User::createUserID(User *user)
 {
     // From mem. addr it creates unique user ID
@@ -306,6 +334,22 @@ vector<Result> Result::loadResults()
         results.push_back(result); // add to results
     }
     file.close();
+    return results;
+}
+
+vector<Result> Result::loadResultsByExam(Exam exam)
+{
+
+    vector<Result> results;
+
+    for (Result result : Result::loadResults())
+    {
+        if (result.exam_id == exam.ID)
+        {
+            results.push_back(result);
+        }
+    }
+
     return results;
 }
 
@@ -543,6 +587,16 @@ bool MultipleChoice::checkAnswer()
 
 void Exam::start(User user)
 {
+    vector<Result> results;
+
+    for (Result result : Result::loadResultsByExam(*this))
+    {
+        if (result.getUserId() == user.getID())
+        {
+            cout << "You already participated to this exam!" << endl;
+            return;
+        }
+    }
     cout << "Exam is started by "
          << "\n";
     user.display();
@@ -567,6 +621,16 @@ void Exam::start(User user)
 
     this->displayResults(result);
     result.writeToFile();
+}
+
+User Exam::getAuthor()
+{
+    return this->author;
+}
+
+string Exam::getTitle()
+{
+    return this->title;
 }
 void Exam::insertQuestions(User author)
 {
@@ -759,7 +823,6 @@ void Exam::displayResults(Result result)
 User performRegister()
 {
     clear();
-    cout << BOLDBLUE << registerBanner << RESET << endl;
 
     User user;
     int role_option;
@@ -807,7 +870,6 @@ selectRole:
 User performLogin()
 {
     clear();
-    cout << BOLDYELLOW << loginBanner << RESET << endl;
     User *user = NULL;
 
 login:
@@ -853,8 +915,9 @@ User performAuth()
 
 void teacherMenu(User user)
 {
-    int option;
+    vector<Exam> myExams;
     bool isRunning = true;
+    int option, counter{0};
 
     while (isRunning)
     {
@@ -862,7 +925,7 @@ void teacherMenu(User user)
              << "\n";
         cout << "1. Create exam"
              << "\n";
-        cout << "2. List of exams"
+        cout << "2. List of your exams"
              << "\n";
         cout << "3. User info"
              << "\n";
@@ -873,25 +936,81 @@ void teacherMenu(User user)
 
         if (option == 1)
         {
+            // Option for creating new EXAM
             Exam exam;
             exam.insertQuestions(user);
             exam.writeToFile();
-
-            cout << "\n";
         }
         else if (option == 2)
         {
-            cout << "List of exams: "
-                 << "\n";
+            // Print list of all exams
+            myExams = user.getExams();
+            cout << BOLDMAGENTA << "[ MY EXAMS ]\n"
+                 << RESET;
+
+            for (int index = 0; index < myExams.size(); index++)
+            {
+                cout << index + 1 << ". " << myExams.at(index).getTitle() << endl;
+            }
+            integerInput("Select the exam", option);
+
+        selectExam:
+            // check user input range
+            if (1 <= option && option <= myExams.size())
+            {
+            exam:
+                // Get exam by array index
+                Exam exam = myExams.at(option - 1);
+
+                cout << "1. Load stats" << endl;
+                cout << "2. Test examination process" << endl;
+                cout << "3(other). Back" << endl;
+                integerInput("Your Option ", option);
+
+                if (option == 1)
+                {
+                    // load all results from filesystem
+                    vector<Result> results = Result::loadResultsByExam(exam);
+
+                    if (results.size() == 0)
+                    {
+                        cout << "Results not found :(" << endl;
+                    }
+                    else
+                    {
+                        // Print all results like table
+                        cout << "№ \tUser ID\t  Score" << endl;
+                        for (int counter = 0; counter < results.size(); counter++)
+                        {
+                            Result temp_result = results.at(counter);
+                            cout << counter + 1 << ".\t" << temp_result.getUserId() << "\t     " << temp_result.getTotalScore() << endl;
+                        }
+                        cout << endl
+                             << endl;
+                    }
+                }
+                else if (option == 2)
+                {
+                    // Option for testing exam
+                    exam.start(user);
+                    goto selectExam;
+                }
+                goto exam;
+            }
+            else
+            {
+                cout << "Exam does not exist!\n";
+            }
         }
+
         else if (option == 3)
         {
             user.display();
         }
         else
         {
-            cout << "Good bye!"
-                 << "\n";
+            cout << BOLDBLUE << "Good bye!\n"
+                 << RESET;
             exit(0);
         }
     }
@@ -942,9 +1061,6 @@ void studentMenu(User user)
 
 int main()
 {
-    cout << BOLDGREEN << banner << RESET;
-    cout << "W is " << WIDTH << " H is " << HEIGHT << endl;
-
     cout << "The number of users: " << User::loadUsers().size() << endl
          << endl;
 
