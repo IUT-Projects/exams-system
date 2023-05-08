@@ -213,8 +213,8 @@ public:
     void loadQuestions();
 
     void writeToFile();
+    void removeFromFile();
     static vector<Exam> loadExams();
-
     friend vector<Result> Result::loadResultsByExam(Exam exam);
 };
 
@@ -671,6 +671,22 @@ void Exam::insertQuestions(User author)
     }
 }
 
+void Exam::removeFromFile()
+{
+    string line;
+    vector<Exam> exams = Exam::loadExams(); // load before delete
+
+    fstream file(EXAMS_DATA_PATH, ios::out | ios::trunc);
+
+    for (Exam exam : exams)
+    {
+        if (exam.ID != this->ID)
+        {
+            exam.writeToFile();
+        }
+    }
+}
+
 string Exam::createExamID(Exam *exam)
 {
     // From mem. addr it creates unique user ID
@@ -947,24 +963,26 @@ void teacherMenu(User user)
             myExams = user.getExams();
             cout << BOLDMAGENTA << "[ MY EXAMS ]\n"
                  << RESET;
-
-            for (int index = 0; index < myExams.size(); index++)
+            if (myExams.size())
             {
-                cout << index + 1 << ". " << myExams.at(index).getTitle() << endl;
+                for (int index = 0; index < myExams.size(); index++)
+                {
+                    cout << index + 1 << ". " << myExams.at(index).getTitle() << endl;
+                }
+                integerInput("Select the exam", option);
             }
-            integerInput("Select the exam", option);
 
-        selectExam:
             // check user input range
             if (1 <= option && option <= myExams.size())
             {
-            exam:
                 // Get exam by array index
                 Exam exam = myExams.at(option - 1);
-
+            selectAction:
+                cout << "\n[ ACTIONS ]\n";
                 cout << "1. Load stats" << endl;
                 cout << "2. Test examination process" << endl;
-                cout << "3(other). Back" << endl;
+                cout << "3. Delete Exam" << endl;
+                cout << "(other). Back" << endl;
                 integerInput("Your Option ", option);
 
                 if (option == 1)
@@ -978,7 +996,9 @@ void teacherMenu(User user)
                     }
                     else
                     {
+                        clear();
                         // Print all results like table
+                        cout << "\n[ RESULTS ]\n";
                         cout << "№ \tUser ID\t  Score" << endl;
                         for (int counter = 0; counter < results.size(); counter++)
                         {
@@ -988,14 +1008,31 @@ void teacherMenu(User user)
                         cout << endl
                              << endl;
                     }
+                    goto selectAction;
                 }
                 else if (option == 2)
                 {
+                    clear();
                     // Option for testing exam
                     exam.start(user);
-                    goto selectExam;
+                    goto selectAction;
                 }
-                goto exam;
+                else if (option == 3)
+                {
+                    string answer;
+
+                    cout << "Are you sure? (y/n)";
+                    cin.ignore();
+                    getline(cin, answer);
+                    toLowerCase(answer);
+                    bool approve = (answer == "y" || answer == "yes");
+                    cout << boolalpha << approve << endl;
+                    if (approve)
+                    {
+                        exam.removeFromFile();
+                        cout << "Exam deleted!" << endl;
+                    }
+                }
             }
             else
             {
