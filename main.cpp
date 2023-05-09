@@ -12,7 +12,6 @@
 #define SHORT_ANSWER_QUESTIONS_DATA_PATH "./data/questions/short.txt"
 
 #include "components/utils.h"
-#include "components/banners.h"
 #include "components/password_masking.h"
 
 using namespace std;
@@ -66,6 +65,7 @@ public:
     friend User performRegister();
     friend void adminMenu(User user);
 
+    void updatePassword(string new_password);
     void _delete();
 };
 
@@ -208,7 +208,7 @@ public:
     void includeMultipleChoiceQuestion(MultipleChoice question);
     void includeShortAnswerQuestion(ShortAnswerQuestion question);
     int getTotalNumberOfQuestions();
-    void displayResults(Result result);
+    void displayResults(Result result, vector<pair<string, bool>> stats);
     string getTitle();
     User getAuthor();
 
@@ -230,11 +230,17 @@ public:
 
 void User::display()
 {
-    cout << "ID: " << ID << "\n";
-    cout << "Name: " << name << "\n";
-    cout << "Role: " << role << "\n";
+    cout << "[ USER INFO ]" << endl;
+    cout << GREEN << "ID: " << RESET << BLUE << ID << RESET << "\n";
+    cout << GREEN << "Name: " << RESET << BLUE << name << RESET << "\n";
+    cout << GREEN << "Role: " << RESET << BLUE << role << RESET << "\n\n";
 }
-
+void User::updatePassword(string new_password)
+{
+    this->_delete();
+    this->password = new_password;
+    User::addUser(*this);
+}
 vector<Exam> User::getExams()
 {
     this->exams.clear();
@@ -407,6 +413,21 @@ vector<Result> Result::loadResultsByUser(User user)
     }
 
     return results;
+}
+
+void displayResults(vector<Result> results)
+{
+
+    cout << "\n[ RESULTS ]\n";
+    cout << "№ \tUser ID\t  Score" << endl;
+
+    int counter{1};
+    for (Result result : results)
+    {
+        cout << counter << ".\t" << result.getUserId() << "    " << result.getTotalScore() << endl;
+        counter++;
+    }
+    cout << "\n\n";
 }
 
 // QUESTIONS
@@ -649,13 +670,12 @@ void Exam::start(User user)
     {
         if (result.getUserId() == user.getID())
         {
-            cout << "You already participated to this exam!" << endl;
+            cout << BG_RED << WHITE << "You already participated to this exam!" << RESET << endl;
             return;
         }
     }
-    cout << "Exam is started by "
-         << "\n";
-    user.display();
+
+    cout << BG_GREEN << WHITE << "Exam Started" << RESET << endl;
 
     this->shuffleQuestions(this->multi_questions);
     this->shuffleQuestions(this->short_answer_questions);
@@ -664,18 +684,28 @@ void Exam::start(User user)
 
     result.setMaxPossibleScore(this->getTotalNumberOfQuestions());
 
+    vector<pair<string, bool>> stats;
+
+    pair<string, bool> temp_pair;
+
     for (MultipleChoice question : multi_questions)
     {
         question.start(result);
+        temp_pair.first = question.question;
+        temp_pair.second = question.checkAnswer();
+        stats.push_back(temp_pair);
     }
     cin.ignore();
 
     for (ShortAnswerQuestion question : short_answer_questions)
     {
         question.start(result);
+        temp_pair.first = question.question;
+        temp_pair.second = question.checkAnswer();
+        stats.push_back(temp_pair);
     }
 
-    this->displayResults(result);
+    this->displayResults(result, stats);
     result.writeToFile();
 }
 
@@ -694,7 +724,7 @@ void Exam::insertQuestions(User author)
 
     this->author = author;
 
-    cout << "Title of exam: ";
+    cout << RESET << "Title of exam: ";
     cin.ignore();
     getline(cin, this->title);
 
@@ -763,13 +793,12 @@ string Exam::createExamID()
 
 void Exam::info()
 {
-    cout << "\nTitle: " << this->getTitle() << endl;
-    cout << "Exam ID: " << this->ID << endl;
-    cout << "Author: " << this->author.Name() << "\n";
-    cout << "Total number of questions: " << this->getTotalNumberOfQuestions() << "\n";
-    cout << "Number of written questions: " << this->short_answer_questions.size() << "\n";
-    cout << "Number of multi-choice questions: " << this->multi_questions.size() << "\n"
-                                                                                    "\n";
+    cout << GREEN << "\nTitle: " << BLUE << this->getTitle() << RESET << endl;
+    cout << GREEN << "Exam ID: " << BLUE << this->ID << RESET << endl;
+    cout << GREEN << "Author: " << BLUE << this->author.Name() << RESET << "\n";
+    cout << GREEN << "Total number of questions: " << BLUE << this->getTotalNumberOfQuestions() << RESET << "\n";
+    cout << GREEN << "Number of written questions: " << BLUE << this->short_answer_questions.size() << RESET << "\n";
+    cout << GREEN << "Number of multi-choice questions: " << BLUE << this->multi_questions.size() << RESET << "\n\n";
 }
 
 template <typename T> // T can be MultipleChoice || ShortAnswer object
@@ -861,8 +890,7 @@ void Exam::loadQuestions()
     }
 }
 
-vector<Exam>
-Exam::loadExams()
+vector<Exam> Exam::loadExams()
 {
     string line;
     vector<Exam> exams; // saving output result
@@ -888,14 +916,23 @@ Exam::loadExams()
     return exams;
 }
 
-void Exam::displayResults(Result result)
+void Exam::displayResults(Result result, vector<pair<string, bool>> stats)
 {
     cout << endl
          << BOLDGREEN << setw(25) << "[ RESULTS ]" << RESET << setw(25) << endl;
 
     cout << "Total score: " << result.getTotalScore() << "/" << this->getTotalNumberOfQuestions() << endl;
 
-    // not implemented yet!
+    cout << WHITE << BG_BLUE << "Summary:" << endl
+         << RESET;
+
+    for (pair<string, bool> stat : stats)
+    {
+        string COLOR = (stat.second) ? GREEN : RED;
+        cout << "Question: " << stat.first << ", your answer is " << COLOR << boolalpha << stat.second << RESET << endl;
+    }
+    cout << endl
+         << endl;
 }
 
 /* Menu and forms */
@@ -908,16 +945,17 @@ User performRegister()
     int role_option;
     string name, role, password;
 
-    cout << "What is your name? ";
+    cout << BG_BLUE << WHITE << "What is your name? " << RESET << " ";
+
     getline(cin, name);
 
     password = getPassword();
 
-    cout << "\nSelect your role: "
+    cout << YELLOW << "\n\nSelect your role: " << RESET
          << "\n";
-    cout << "1. Teacher"
+    cout << BG_GREEN << WHITE << "1." << RESET << " Teacher"
          << "\n";
-    cout << "2. Student"
+    cout << BG_GREEN << WHITE << "2." << RESET << " Student"
          << "\n";
     integerInput("Your role", role_option);
 
@@ -938,10 +976,11 @@ selectRole:
     }
 
     user.setData(name, role, password);
-    cout << "[ Save that information ]"
+    cout << GREEN << "[ Save that information ]"
          << "\n";
     cout << "Your ID: " << user.getID() << "\n";
-    cout << "Your Password: " << user.password << "\n";
+    cout << "Your Password: " << user.password << "\n"
+         << RESET;
     User::addUser(user);
     return user;
 }
@@ -953,7 +992,7 @@ User performLogin()
 
 login:
     string ID, password;
-    cout << "Enter ID: ";
+    cout << WHITE << BG_BLUE << "Enter ID: " << RESET;
     cin >> ID;
     cin.ignore();
     password = getPassword();
@@ -972,7 +1011,7 @@ login:
 
     if (!isExist)
     {
-        cout << "\nID or password is incorrect. Please try again." << endl;
+        cout << RED << "\nID or password is incorrect. Please try again!" << RESET << endl;
         goto login;
     }
     return *user; // will not be executed
@@ -982,28 +1021,13 @@ User performAuth()
 {
     string answer;
     bool isCompleted = false;
-    cout << "Do you have an account? (y/n)";
+    cout << YELLOW << "Do you have an account? (y/n)" << RESET;
     getline(cin, answer);
 
     toLowerCase(answer);
     bool hasAccount = (answer == "y" || answer == "yes");
 
     return (hasAccount) ? performLogin() : performRegister();
-}
-
-void displayResults(vector<Result> results)
-{
-
-    cout << "\n[ RESULTS ]\n";
-    cout << "№ \tUser ID\t  Score" << endl;
-
-    int counter{1};
-    for (Result result : results)
-    {
-        cout << counter << ".\t" << result.getUserId() << "    " << result.getTotalScore() << endl;
-        counter++;
-    }
-    cout << "\n\n";
 }
 
 void teacherMenu(User user)
@@ -1014,15 +1038,16 @@ void teacherMenu(User user)
 
     while (isRunning)
     {
-        cout << "\n[ MENU ]"
+        cout << WHITE << BG_GREEN << "\n[ MENU ]"
+             << "\n"
+             << RESET;
+        cout << WHITE << BG_BLUE << "1." << RESET << " Create exam"
              << "\n";
-        cout << "1. Create exam"
+        cout << WHITE << BG_BLUE << "2." << RESET << " List of your exams"
              << "\n";
-        cout << "2. List of your exams"
+        cout << WHITE << BG_BLUE << "3." << RESET << " User info"
              << "\n";
-        cout << "3. User info"
-             << "\n";
-        cout << "4. Quit"
+        cout << WHITE << BG_BLUE << "4." << RESET << " Quit"
              << "\n";
         integerInput("Your option", option);
         clear();
@@ -1030,22 +1055,21 @@ void teacherMenu(User user)
         if (option == 1)
         {
             // Option for creating new EXAM
-            Exam *exam = new Exam;
-            exam->insertQuestions(user);
-            exam->writeToFile();
-            delete exam;
+            Exam exam;
+            exam.insertQuestions(user);
+            exam.writeToFile();
         }
         else if (option == 2)
         {
             // Print list of all exams
             myExams = user.getExams();
-            cout << BOLDMAGENTA << "[ MY EXAMS ]\n"
+            cout << BG_MAGENTA << WHITE << "[ MY EXAMS ]\n"
                  << RESET;
             if (myExams.size())
             {
                 for (int index = 0; index < myExams.size(); index++)
                 {
-                    cout << index + 1 << ". " << myExams.at(index).getTitle() << endl;
+                    cout << BG_YELLOW << BLACK << index + 1 << "." << RESET << " " << myExams.at(index).getTitle() << endl;
                 }
                 integerInput("Select the exam", option);
             }
@@ -1058,11 +1082,12 @@ void teacherMenu(User user)
                 exam.info();
             selectAction:
 
-                cout << "\n[ ACTIONS ]\n";
-                cout << "1. Load stats" << endl;
-                cout << "2. Test examination process" << endl;
-                cout << "3. Delete Exam" << endl;
-                cout << "4. Exam info" << endl;
+                cout << GREEN << "\n[ ACTIONS ]\n"
+                     << RESET;
+                cout << WHITE << BG_BLUE << "1." << RESET << " Load stats" << endl;
+                cout << WHITE << BG_BLUE << "2." << RESET << " Test examination process" << endl;
+                cout << WHITE << BG_BLUE << "3." << RESET << " Delete Exam" << endl;
+                cout << WHITE << BG_BLUE << "4." << RESET << " Exam info" << endl;
                 cout << "(other). Back" << endl;
                 integerInput("Your Option ", option);
 
@@ -1103,7 +1128,9 @@ void teacherMenu(User user)
                 }
                 else if (option == 4)
                 {
+                    clear();
                     exam.info();
+                    goto selectAction;
                 }
             }
             else
@@ -1134,15 +1161,16 @@ void studentMenu(User user)
 
     while (isRunning)
     {
-        cout << "\n[ MENU ]"
+        cout << BG_GREEN << "\n[ MENU ]"
+             << "\n"
+             << RESET;
+        cout << BG_BLUE << "1." << RESET << " List of exams"
              << "\n";
-        cout << "1. List of exams"
+        cout << BG_BLUE << "2." << RESET << " My Results"
              << "\n";
-        cout << "2. My Results"
+        cout << BG_BLUE << "3." << RESET << " User info"
              << "\n";
-        cout << "3. User info"
-             << "\n";
-        cout << "4. Quit"
+        cout << BG_BLUE << "4." << RESET << " Quit"
              << "\n";
         integerInput("Your option", option);
         clear();
@@ -1152,11 +1180,11 @@ void studentMenu(User user)
             int option;
             int counter{1};
             vector<Exam> exams = Exam::loadExams();
-            cout << "[ List of Available Exams ]" << endl;
+            cout << GREEN << "[ List of Available Exams ]" << RESET << endl;
 
             for (Exam exam : exams)
             {
-                cout << counter << ". " << exam.getTitle() << ", total: " << exam.getTotalNumberOfQuestions() << " questions\n";
+                cout << BG_BLUE << counter << "." << RESET << " " << exam.getTitle() << ", total: " << exam.getTotalNumberOfQuestions() << " questions\n";
             }
 
             integerInput("Select the exam to start", option);
@@ -1176,12 +1204,13 @@ void studentMenu(User user)
         }
         else if (option == 2)
         {
-            cout << "[ My Results ]\n";
+            cout << YELLOW << "[ My Results ]\n"
+                 << RESET;
             for (Result result : Result::loadResultsByUser(user))
             {
                 Exam exam = result.getExam();
 
-                cout << "Exam: " << exam.getTitle() << ", score: " << result.getTotalScore() << "/" << exam.getTotalNumberOfQuestions() << endl;
+                cout << "Exam: " << GREEN << exam.getTitle() << RESET << ", score: " << BG_BLUE << result.getTotalScore() << "/" << exam.getTotalNumberOfQuestions() << RESET << endl;
             }
         }
         else if (option == 3)
@@ -1208,7 +1237,7 @@ void adminMenu(User user)
 
     while (isRunning)
     {
-        cout << "Admin Menu" << endl;
+        cout << BG_YELLOW << BLACK << "Admin Menu" << RESET << endl;
         cout << "1. List of users" << endl;
         cout << "2. Admin profile" << endl;
         cout << "3. Quit" << endl;
@@ -1221,7 +1250,7 @@ void adminMenu(User user)
             cout << "\n[ USERS ]\n№  ID\t\tName\tRole" << endl;
             for (User user : User::loadUsers())
             {
-                cout << counter << ". " << user.ID << " | " << user.name << " | " << user.role << endl;
+                cout << GREEN << counter << ". " << BLUE << user.ID << RESET << " | " << MAGENTA << user.name << RESET << " | " << CYAN << user.role << RESET << endl;
                 counter++;
             }
             integerInput("Select the user", option);
@@ -1232,7 +1261,8 @@ void adminMenu(User user)
                 User currentUser = users.at(option - 1);
 
                 cout << "1. Display user" << endl;
-                cout << "2. Delete user" << endl;
+                cout << "2. Update user password" << endl;
+                cout << "3. Delete user" << endl;
 
                 integerInput("Select the action", option);
                 if (option == 1)
@@ -1240,6 +1270,15 @@ void adminMenu(User user)
                     currentUser.display();
                 }
                 else if (option == 2)
+                {
+                    string new_password;
+                    cout << "Enter new password: ";
+                    cin >> new_password;
+
+                    currentUser.updatePassword(new_password);
+                    cout << GREEN << "Password is updated!" << RESET << endl;
+                }
+                else if (option == 3)
                 {
                     if (confirm())
                     {
@@ -1249,7 +1288,7 @@ void adminMenu(User user)
             }
             else
             {
-                cout << "Wrong input!" << endl;
+                cout << RED << "Wrong input!" << RESET << endl;
             }
             cout << endl;
         }
