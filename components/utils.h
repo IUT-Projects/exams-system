@@ -142,3 +142,21 @@ pair<int, int> getTerminalSize()
 
     return window_size;
 }
+
+void quit()
+{
+    cout << "Good bye!" << endl;
+    exit(0);
+}
+
+bool confirm()
+{
+    string answer;
+
+    cout << "Are you sure (y/n)? ";
+    cin.ignore();
+    getline(cin, answer);
+    toLowerCase(answer);
+
+    return (answer == "y" || answer == "yes");
+}
