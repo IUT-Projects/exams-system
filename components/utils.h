@@ -114,35 +114,6 @@ void clear()
 #endif
 }
 
-#if defined(_WIN32)
-#define WIN32_LEAN_AND_MEAN
-#define VC_EXTRALEAN
-#include <Windows.h>
-#elif defined(__linux__)
-#include <sys/ioctl.h>
-#endif
-
-pair<int, int> getTerminalSize()
-{
-
-    pair<int, int> window_size;
-
-    // stolen from stackoverflow
-#if defined(_WIN32)
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
-    window_size.first = (int)(csbi.srWindow.Right - csbi.srWindow.Left + 1);
-    window_size.second = (int)(csbi.srWindow.Bottom - csbi.srWindow.Top + 1);
-#elif defined(__linux__)
-    struct winsize w;
-    ioctl(fileno(stdout), TIOCGWINSZ, &w);
-    window_size.first = (int)(w.ws_col);
-    window_size.second = (int)(w.ws_row);
-#endif // Windows/Linux
-
-    return window_size;
-}
-
 void quit()
 {
     cout << "Good bye!" << endl;
