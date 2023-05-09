@@ -186,13 +186,13 @@ public:
     {
         // If user provides id, then init with this id
         // If not, create it
-        this->ID = ID.empty() ? Exam::createExamID(this) : ID;
+        this->ID = ID.empty() ? Exam::createExamID() : ID;
     };
 
     void start(User user);
     void insertQuestions(User author);
     // Utility functions
-    static string createExamID(Exam *exam);
+    static string createExamID();
     void info();
     template <typename T> // T can be MultipleChoice || ShortAnswer object
     void shuffleQuestions(vector<T> &questions);
@@ -243,11 +243,8 @@ vector<Exam> User::getExams()
 
 string User::createUserID(User *user)
 {
-    // From mem. addr it creates unique user ID
-    string ID = objectMemoryAddrAsString<User>(user);
-    // (char)toupper(object->role[0]) - is first letter of role
-    // if role is student, we have "S"
-    return (char)toupper(user->role[0]) + ID.substr(5, ID.size());
+    char prefix = (char)toupper(user->role[0]);
+    return generateRandomIDwithPrefix(prefix);
 }
 
 void User::addUser(User user)
@@ -327,6 +324,11 @@ vector<Result> Result::loadResults()
     while (getline(file, line)) // one result_data IN one single line
     {
         vector<string> result_data = split(line, "|"); // split line by | and get vector of strings
+
+        if (line.size() == 0)
+        {
+            break;
+        }
 
         Result result(result_data[0], result_data[1]);
         result.setTotalScore(stoi(result_data[2]));
@@ -673,10 +675,12 @@ void Exam::insertQuestions(User author)
 
 void Exam::removeFromFile()
 {
-    string line;
-    vector<Exam> exams = Exam::loadExams(); // load before delete
+    // load all data before deleting
+    vector<Exam> exams = Exam::loadExams();
 
-    fstream file(EXAMS_DATA_PATH, ios::out | ios::trunc);
+    ofstream file;
+    file.open(EXAMS_DATA_PATH, ios::out | ios::trunc);
+    file.close();
 
     for (Exam exam : exams)
     {
@@ -686,21 +690,16 @@ void Exam::removeFromFile()
         }
     }
 }
-
-string Exam::createExamID(Exam *exam)
+string Exam::createExamID()
 {
-    // From mem. addr it creates unique user ID
-    string ID = objectMemoryAddrAsString<Exam>(exam);
-    // It will return E3921893 like unique ID.
-    return "E" + ID.substr(5, ID.size());
+    // Add E latter at the beginning of random string
+    return generateRandomIDwithPrefix('E');
 }
 
 void Exam::info()
 {
-    cout << "\n"
-         << "\n["
-         << this->title << " exam ]"
-         << "\n";
+    cout << "\nTitle: " << this->getTitle() << endl;
+    cout << "Exam ID: " << this->ID << endl;
     cout << "Author: " << this->author.Name() << "\n";
     cout << "Total number of questions: " << this->getTotalNumberOfQuestions() << "\n";
     cout << "Number of written questions: " << this->short_answer_questions.size() << "\n";
@@ -929,6 +928,21 @@ User performAuth()
     return (hasAccount) ? performLogin() : performRegister();
 }
 
+void displayResults(vector<Result> results)
+{
+
+    cout << "\n[ RESULTS ]\n";
+    cout << "№ \tUser ID\t  Score" << endl;
+
+    int counter{1};
+    for (Result result : results)
+    {
+        cout << counter << ".\t" << result.getUserId() << "    " << result.getTotalScore() << endl;
+        counter++;
+    }
+    cout << "\n\n";
+}
+
 void teacherMenu(User user)
 {
     vector<Exam> myExams;
@@ -945,7 +959,8 @@ void teacherMenu(User user)
              << "\n";
         cout << "3. User info"
              << "\n";
-        cout << "(other) Quit"
+        cout << "4. Logout" << endl;
+        cout << "5. Quit"
              << "\n";
         integerInput("Your option", option);
         clear();
@@ -953,9 +968,10 @@ void teacherMenu(User user)
         if (option == 1)
         {
             // Option for creating new EXAM
-            Exam exam;
-            exam.insertQuestions(user);
-            exam.writeToFile();
+            Exam *exam = new Exam;
+            exam->insertQuestions(user);
+            exam->writeToFile();
+            delete exam;
         }
         else if (option == 2)
         {
@@ -977,11 +993,14 @@ void teacherMenu(User user)
             {
                 // Get exam by array index
                 Exam exam = myExams.at(option - 1);
+                exam.info();
             selectAction:
+
                 cout << "\n[ ACTIONS ]\n";
                 cout << "1. Load stats" << endl;
                 cout << "2. Test examination process" << endl;
                 cout << "3. Delete Exam" << endl;
+                cout << "4. Exam info" << endl;
                 cout << "(other). Back" << endl;
                 integerInput("Your Option ", option);
 
@@ -992,33 +1011,28 @@ void teacherMenu(User user)
 
                     if (results.size() == 0)
                     {
+                        clear();
                         cout << "Results not found :(" << endl;
                     }
                     else
                     {
-                        clear();
                         // Print all results like table
-                        cout << "\n[ RESULTS ]\n";
-                        cout << "№ \tUser ID\t  Score" << endl;
-                        for (int counter = 0; counter < results.size(); counter++)
-                        {
-                            Result temp_result = results.at(counter);
-                            cout << counter + 1 << ".\t" << temp_result.getUserId() << "\t     " << temp_result.getTotalScore() << endl;
-                        }
-                        cout << endl
-                             << endl;
+                        clear();
+                        displayResults(results);
                     }
                     goto selectAction;
                 }
                 else if (option == 2)
                 {
+                    // Test your exam
                     clear();
-                    // Option for testing exam
                     exam.start(user);
                     goto selectAction;
                 }
                 else if (option == 3)
                 {
+
+                    // Delete your exam
                     string answer;
 
                     cout << "Are you sure? (y/n)";
@@ -1026,17 +1040,21 @@ void teacherMenu(User user)
                     getline(cin, answer);
                     toLowerCase(answer);
                     bool approve = (answer == "y" || answer == "yes");
-                    cout << boolalpha << approve << endl;
+
                     if (approve)
                     {
                         exam.removeFromFile();
                         cout << "Exam deleted!" << endl;
                     }
                 }
+                else if (option == 4)
+                {
+                    exam.info();
+                }
             }
             else
             {
-                cout << "Exam does not exist!\n";
+                cout << "There are no exams!\n";
             }
         }
 
@@ -1044,11 +1062,18 @@ void teacherMenu(User user)
         {
             user.display();
         }
+        else if (option == 4)
+        {
+            isRunning = false;
+        }
+        else if (option == 5)
+        {
+            cout << "Good bye!" << endl;
+            exit(0);
+        }
         else
         {
-            cout << BOLDBLUE << "Good bye!\n"
-                 << RESET;
-            exit(0);
+            cout << "Wrong input!" << endl;
         }
     }
 }
@@ -1087,49 +1112,41 @@ void studentMenu(User user)
         {
             user.display();
         }
+        else if (option == 4)
+        {
+            isRunning = false;
+        }
         else
         {
-            cout << "Good bye!"
-                 << "\n";
-            exit(0);
+            cout << "Wrong input!" << endl;
         }
     }
 }
 
 int main()
 {
-    cout << "The number of users: " << User::loadUsers().size() << endl
-         << endl;
 
-    for (User user : User::loadUsers())
+authProcess:
+    // User user = User::loadUsers().at(0); // FOR TESTING PURPOSE ONLY
+    User user = performAuth();
+
+    cout << "User role is: " << user.Role() << "\n";
+
+    if (user.Role() == TEACHER)
     {
-        user.display();
-        cout << endl;
+        teacherMenu(user);
     }
-
-    User user = User::loadUsers().at(0); // FOR TESTING PURPOSE ONLY
-
-    while (true)
+    else if (user.Role() == STUDENT)
     {
-        cout << "User role is: " << user.Role() << "\n";
-
-        if (user.Role() == TEACHER)
-        {
-            teacherMenu(user);
-            break;
-        }
-        else if (user.Role() == STUDENT)
-        {
-            studentMenu(user);
-            break;
-        }
-        else
-        {
-            cout << "Good bye!"
-                 << "\n";
-            exit(0);
-        }
+        studentMenu(user);
     }
+    else
+    {
+        cout << "Good bye!"
+             << "\n";
+        exit(0);
+    }
+    goto authProcess;
 
     return 0;
 };
