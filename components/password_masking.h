@@ -6,7 +6,7 @@ using namespace std;
 
 #if defined _WIN32
 #include <conio.h>
-void getPassword()
+string getPassword()
 {
     char password[MAX_PASSWORD_LENGTH + 1];
 
@@ -35,7 +35,7 @@ void getPassword()
     }
     password[length] = '\0'; // add the null terminator
 
-    return (string)password
+    return (string)password;
 }
 #elif defined(__LINUX__) || defined(__gnu_linux__) || defined(__linux__) || defined(__APPLE__)
 #include <termios.h>
