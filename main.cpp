@@ -112,6 +112,9 @@ public:
     void writeToFile();
     static vector<Result> loadResults();
     static vector<Result> loadResultsByExam(Exam exam);
+    static vector<Result> loadResultsByUser(User user);
+
+    Exam getExam();
 };
 
 class Question
@@ -216,6 +219,8 @@ public:
     void removeFromFile();
     static vector<Exam> loadExams();
     friend vector<Result> Result::loadResultsByExam(Exam exam);
+
+    friend class Result;
 };
 
 // USER
@@ -347,6 +352,34 @@ vector<Result> Result::loadResultsByExam(Exam exam)
     for (Result result : Result::loadResults())
     {
         if (result.exam_id == exam.ID)
+        {
+            results.push_back(result);
+        }
+    }
+
+    return results;
+}
+Exam Result::getExam()
+{
+    Exam *exam = NULL;
+    for (Exam exam : Exam::loadExams())
+    {
+        if (exam.ID == this->getExamId())
+        {
+            return exam;
+        }
+    }
+
+    return *exam;
+}
+vector<Result> Result::loadResultsByUser(User user)
+{
+
+    vector<Result> results;
+
+    for (Result result : Result::loadResults())
+    {
+        if (result.getUserId() == user.getID())
         {
             results.push_back(result);
         }
@@ -677,9 +710,12 @@ void Exam::removeFromFile()
 {
     // load all data before deleting
     vector<Exam> exams = Exam::loadExams();
+    vector<Result> results = Result::loadResults();
 
     ofstream file;
     file.open(EXAMS_DATA_PATH, ios::out | ios::trunc);
+    file.close();
+    file.open(RESULTS_DATA_PATH, ios::out | ios::trunc);
     file.close();
 
     for (Exam exam : exams)
@@ -687,6 +723,12 @@ void Exam::removeFromFile()
         if (exam.ID != this->ID)
         {
             exam.writeToFile();
+        }
+    }
+
+    for(Result result:results) {
+        if (result.getExamId() != this->ID) {
+            result.writeToFile();
         }
     }
 }
@@ -917,7 +959,6 @@ User performAuth()
 {
     string answer;
     bool isCompleted = false;
-
     cout << "Do you have an account? (y/n)";
     getline(cin, answer);
 
@@ -958,8 +999,7 @@ void teacherMenu(User user)
              << "\n";
         cout << "3. User info"
              << "\n";
-        cout << "4. Logout" << endl;
-        cout << "5. Quit"
+        cout << "4. Quit"
              << "\n";
         integerInput("Your option", option);
         clear();
@@ -1034,12 +1074,12 @@ void teacherMenu(User user)
                     // Delete your exam
                     string answer;
 
-                    cout << "Are you sure? (y/n)";
+                    cout << "Are you sure (y/n)? ";
                     cin.ignore();
                     getline(cin, answer);
                     toLowerCase(answer);
                     bool approve = (answer == "y" || answer == "yes");
-                    cout << boolalpha << approve << endl;
+
                     if (approve)
                     {
                         exam.removeFromFile();
@@ -1063,10 +1103,6 @@ void teacherMenu(User user)
         }
         else if (option == 4)
         {
-            isRunning = false;
-        }
-        else if (option == 5)
-        {
             cout << "Good bye!" << endl;
             exit(0);
         }
@@ -1086,34 +1122,67 @@ void studentMenu(User user)
     {
         cout << "\n[ MENU ]"
              << "\n";
-        cout << "1. Start exam"
+        cout << "1. List of exams"
              << "\n";
-        cout << "2. Results"
+        cout << "2. My Results"
              << "\n";
         cout << "3. User info"
              << "\n";
-        cout << "(other) Quit"
+        cout << "4. Quit"
              << "\n";
         integerInput("Your option", option);
         clear();
 
         if (option == 1)
         {
-            Exam exam;
-            exam.start(user);
+            int option;
+            int counter{1};
+            vector<Exam> exams = Exam::loadExams();
+            cout << "[ List of Available Exams ]" << endl;
+
+            for (Exam exam : exams)
+            {
+                cout << counter << ". " << exam.getTitle() << ", total: " << exam.getTotalNumberOfQuestions() << " questions\n";
+            }
+
+            integerInput("Select the exam to start", option);
+
+            if (1 <= option && option <= exams.size())
+            {
+                string answer;
+                cout << "Are you sure (y/n)? ";
+                cin.ignore();
+                getline(cin, answer);
+                toLowerCase(answer);
+                bool approve = (answer == "y" || answer == "yes");
+                if (approve)
+                {
+                    exams.at(option - 1).start(user);
+                }
+            }
+            else
+            {
+                cout << "Wrong input! \n";
+            }
         }
         else if (option == 2)
         {
-            cout << "Results: "
-                 << "\n";
+            cout << "[ My Results ]\n";
+            for (Result result : Result::loadResultsByUser(user))
+            {
+                Exam exam = result.getExam();
+
+                cout << "Exam: " << exam.getTitle() << ", score: " << result.getTotalScore() << "/" << exam.getTotalNumberOfQuestions() << endl;
+            }
         }
         else if (option == 3)
         {
+            cout << "[ User info ]" << endl;
             user.display();
         }
         else if (option == 4)
         {
-            isRunning = false;
+            exit(0);
         }
         else
         {
@@ -1126,9 +1195,10 @@ int main()
 {
 authProcess:
     // User user = User::loadUsers().at(0); // FOR TESTING PURPOSE ONLY
+
     User user = performAuth();
     cout << endl;
-    
+
     if (user.Role() == TEACHER)
     {
         teacherMenu(user);
