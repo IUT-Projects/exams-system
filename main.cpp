@@ -113,6 +113,7 @@ public:
 
     void display();
     void writeToFile();
+    void removeFromFile();
     static vector<Result> loadResults();
     static vector<Result> loadResultsByExam(Exam exam);
     static vector<Result> loadResultsByUser(User user);
@@ -343,6 +344,23 @@ void Result::writeToFile()
     file << exam_id << "|" << user_id << "|" << total_score << "|" << max_possible_score << "\n";
 
     file.close();
+}
+
+void Result::removeFromFile()
+{
+    vector<Result> results = Result::loadResults();
+
+    ofstream file;
+    file.open(RESULTS_DATA_PATH, ios::out | ios::trunc);
+    file.close();
+
+    for (Result result : results)
+    {
+        if (result.getUserId() != this->user_id)
+        {
+            result.writeToFile();
+        }
+    }
 }
 
 vector<Result> Result::loadResults()
@@ -992,7 +1010,7 @@ User performLogin()
 
 login:
     string ID, password;
-    cout << WHITE << BG_BLUE << "Enter ID: " << RESET;
+    cout << WHITE << BG_BLUE << "Enter ID:" << RESET << " ";
     cin >> ID;
     cin.ignore();
     password = getPassword();
@@ -1038,16 +1056,19 @@ void teacherMenu(User user)
 
     while (isRunning)
     {
-        cout << WHITE << BG_GREEN << "\n[ MENU ]"
-             << "\n"
-             << RESET;
+        cout << WHITE << BG_GREEN << "\n[ MENU ]" << RESET
+             << "\n";
         cout << WHITE << BG_BLUE << "1." << RESET << " Create exam"
              << "\n";
         cout << WHITE << BG_BLUE << "2." << RESET << " List of your exams"
              << "\n";
-        cout << WHITE << BG_BLUE << "3." << RESET << " User info"
+        cout << WHITE << BG_BLUE << "3." << RESET << " Add student"
              << "\n";
-        cout << WHITE << BG_BLUE << "4." << RESET << " Quit"
+        cout << WHITE << BG_BLUE << "4." << RESET << " List of your students"
+             << "\n";
+        cout << WHITE << BG_BLUE << "5." << RESET << " User info"
+             << "\n";
+        cout << WHITE << BG_BLUE << "6." << RESET << " Quit"
              << "\n";
         integerInput("Your option", option);
         clear();
@@ -1138,12 +1159,84 @@ void teacherMenu(User user)
                 cout << "There are no exams!\n";
             }
         }
+        else if(option == 3)
+        {
+            User new_student;
+            string name, default_password = "dddddd";
+            cout << "Enter student's name: ";
+            cin >> name;
+            new_student.setData(name, STUDENT, default_password);
+            User::addUser(new_student);
+        }
+        else if (option == 4)
+        {
+            int index = 0;
+            vector <User> myStudents = User::loadUsers();
+            myStudents.erase(remove_if(myStudents.begin(), myStudents.end(),
+                                       [](User u)
+                                       {return u.Role() != STUDENT;}), myStudents.end());
+            cout << BG_MAGENTA << WHITE  << "[ MY Students ]\n"
+                 << RESET;
+            if(myStudents.size()) {
+                for (int index = 0; index < myStudents.size(); index++) {
+                    cout << BG_YELLOW << BLACK << index + 1 << "." << RESET << " " << myStudents.at(index).Name() << endl;
+                }
+                cout << "\n";
+                integerInput("Select student ", option);
+            }
+            if (1 <= option && option <= myStudents.size())
+            {
+                User student = myStudents.at(option - 1);
+                vector <Result> results = Result::loadResultsByUser(student);
 
-        else if (option == 3)
+                selectOption:
+                cout << GREEN << "\n[ ACTIONS ]\n";
+                cout << WHITE << BG_BLUE << "1." << RESET << " Student info" << endl;
+                cout << WHITE << BG_BLUE << "2." << RESET << " Student result" << endl;
+                cout << WHITE << BG_BLUE << "3." << RESET << " Remove student" << endl;
+                cout << "(other). Back" << endl;
+                integerInput("Your Option ", option);
+
+                if (option == 1)
+                {
+                    student.display();
+                    goto selectOption;
+                }
+                if (option == 2)
+                {
+                    if (results.size() == 0)
+                    {
+                        clear();
+                        cout << "Results not found :(" << endl;
+                    }
+                    else
+                    {
+                        clear();
+                        displayResults(results);
+                    }
+                    goto selectOption;
+                }
+                if (option == 3)
+                {
+                    if (confirm())
+                    {
+                        student._delete();
+                        for (Result result : results) {
+                            result.removeFromFile();
+                        }
+                    }
+                }
+            }
+            else
+            {
+                cout << "There are no students!\n";
+            }
+        }
+        else if (option == 5)
         {
             user.display();
         }
-        else if (option == 4)
+        else if (option == 6)
         {
             quit();
         }
@@ -1161,9 +1254,8 @@ void studentMenu(User user)
 
     while (isRunning)
     {
-        cout << BG_GREEN << "\n[ MENU ]"
-             << "\n"
-             << RESET;
+        cout << BG_GREEN << "\n[ MENU ]" << RESET
+             << "\n";
         cout << BG_BLUE << "1." << RESET << " List of exams"
              << "\n";
         cout << BG_BLUE << "2." << RESET << " My Results"
@@ -1215,7 +1307,6 @@ void studentMenu(User user)
         }
         else if (option == 3)
         {
-            cout << "[ User info ]" << endl;
             user.display();
         }
         else if (option == 4)
