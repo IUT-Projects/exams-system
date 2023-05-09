@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <iostream>
 #include <random>
+#include <ctime>
+#include <unistd.h>
 
 using namespace std;
 
@@ -61,15 +63,43 @@ vector<string> split(const string &str, const string &delim)
     return tokens;
 }
 
-template <typename T>
-string objectMemoryAddrAsString(T *obj)
+string generateRandomString(const int length)
 {
-    // Memory addr. for every object -> unique
-    // This function converts memory addr. to string that will be used unique IDs
-    const void *address = static_cast<const void *>(obj);
-    stringstream current_object_address;
-    current_object_address << address;
-    return current_object_address.str();
+    // Function for generating random alpha numeric string
+    // Stolen from stackoverflow
+
+    srand((unsigned)time(NULL) * getpid());
+    static const char alphanum[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+
+    string temp_string;
+    temp_string.reserve(length);
+
+    for (int iterations = 0; iterations < length; ++iterations)
+    {
+        temp_string += alphanum[rand() % (sizeof(alphanum) - 1)];
+    }
+
+    return temp_string;
+}
+
+string generateRandomIDwithPrefix(char prefix)
+{
+    // Returns random string with pattern like:
+
+    // ROLE-RANDOMSTRING
+    // e.g T-54as56d4sa
+    const int string_length = 8;
+
+    string ID = "";
+    string randomString = generateRandomString(string_length);
+    ID += prefix;
+    ID += '-';
+    ID.append(randomString);
+
+    return ID;
 }
 
 void clear()
