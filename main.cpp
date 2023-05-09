@@ -64,6 +64,9 @@ public:
     // some function for auth needs access to private members
     friend User performLogin();
     friend User performRegister();
+    friend void adminMenu(User user);
+
+    void _delete();
 };
 
 class Result
@@ -261,6 +264,24 @@ void User::addUser(User user)
     file << user.name << "|" << user.role << "|" << user.password << "|" << user.ID << "\n";
 
     file.close();
+}
+
+void User::_delete()
+{
+    // load all data before deleting
+    vector<User> users = User::loadUsers();
+
+    ofstream file;
+    file.open(USER_DATA_PATH, ios::out | ios::trunc);
+    file.close();
+
+    for (User user : users)
+    {
+        if (user.ID != this->ID)
+        {
+            User::addUser(user);
+        }
+    }
 }
 void User::setData(string name, string role, string password, string ID = "")
 {
@@ -726,8 +747,10 @@ void Exam::removeFromFile()
         }
     }
 
-    for(Result result:results) {
-        if (result.getExamId() != this->ID) {
+    for (Result result : results)
+    {
+        if (result.getExamId() != this->ID)
+        {
             result.writeToFile();
         }
     }
@@ -1072,15 +1095,7 @@ void teacherMenu(User user)
                 {
 
                     // Delete your exam
-                    string answer;
-
-                    cout << "Are you sure (y/n)? ";
-                    cin.ignore();
-                    getline(cin, answer);
-                    toLowerCase(answer);
-                    bool approve = (answer == "y" || answer == "yes");
-
-                    if (approve)
+                    if (confirm())
                     {
                         exam.removeFromFile();
                         cout << "Exam deleted!" << endl;
@@ -1103,8 +1118,7 @@ void teacherMenu(User user)
         }
         else if (option == 4)
         {
-            cout << "Good bye!" << endl;
-            exit(0);
+            quit();
         }
         else
         {
@@ -1149,13 +1163,8 @@ void studentMenu(User user)
 
             if (1 <= option && option <= exams.size())
             {
-                string answer;
-                cout << "Are you sure (y/n)? ";
-                cin.ignore();
-                getline(cin, answer);
-                toLowerCase(answer);
-                bool approve = (answer == "y" || answer == "yes");
-                if (approve)
+
+                if (confirm())
                 {
                     exams.at(option - 1).start(user);
                 }
@@ -1182,7 +1191,7 @@ void studentMenu(User user)
         }
         else if (option == 4)
         {
-            exit(0);
+            quit();
         }
         else
         {
@@ -1191,11 +1200,75 @@ void studentMenu(User user)
     }
 }
 
+void adminMenu(User user)
+{
+    clear();
+    bool isRunning = true;
+    int option;
+
+    while (isRunning)
+    {
+        cout << "Admin Menu" << endl;
+        cout << "1. List of users" << endl;
+        cout << "2. Admin profile" << endl;
+        cout << "3. Quit" << endl;
+        integerInput("Your Option", option);
+        if (option == 1)
+        {
+            clear();
+            vector<User> users = User::loadUsers();
+            int counter{1};
+            cout << "\n[ USERS ]\n№  ID\t\tName\tRole" << endl;
+            for (User user : User::loadUsers())
+            {
+                cout << counter << ". " << user.ID << " | " << user.name << " | " << user.role << endl;
+                counter++;
+            }
+            integerInput("Select the user", option);
+
+            if (1 <= option && option <= users.size())
+            {
+                clear();
+                User currentUser = users.at(option - 1);
+
+                cout << "1. Display user" << endl;
+                cout << "2. Delete user" << endl;
+
+                integerInput("Select the action", option);
+                if (option == 1)
+                {
+                    currentUser.display();
+                }
+                else if (option == 2)
+                {
+                    if (confirm())
+                    {
+                        currentUser._delete();
+                    }
+                }
+            }
+            else
+            {
+                cout << "Wrong input!" << endl;
+            }
+            cout << endl;
+        }
+
+        else if (option == 2)
+        {
+            clear();
+            user.display();
+        }
+        else if (option == 3)
+        {
+            quit();
+        }
+    }
+}
+
 int main()
 {
 authProcess:
-    // User user = User::loadUsers().at(0); // FOR TESTING PURPOSE ONLY
-
     User user = performAuth();
     cout << endl;
 
@@ -1207,11 +1280,13 @@ authProcess:
     {
         studentMenu(user);
     }
+    else if (user.Role() == ADMIN)
+    {
+        adminMenu(user);
+    }
     else
     {
-        cout << "Good bye!"
-             << "\n";
-        exit(0);
+        quit();
     }
     goto authProcess;
 
