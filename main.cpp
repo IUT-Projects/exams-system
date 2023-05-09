@@ -846,10 +846,9 @@ User performRegister()
     cout << "What is your name? ";
     getline(cin, name);
 
-    cout << "Your password: ";
-    getline(cin, password);
+    password = getPassword();
 
-    cout << "Select your role: "
+    cout << "\nSelect your role: "
          << "\n";
     cout << "1. Teacher"
          << "\n";
@@ -889,10 +888,10 @@ User performLogin()
 
 login:
     string ID, password;
-    cout << "Your ID: ";
+    cout << "Enter ID: ";
     cin >> ID;
-    cout << "Your Password: ";
-    cin >> password;
+    cin.ignore();
+    password = getPassword();
     vector<User> users = User::loadUsers();
 
     bool isExist = false;
@@ -908,7 +907,7 @@ login:
 
     if (!isExist)
     {
-        cout << "ID or password is incorrect. Please try again." << endl;
+        cout << "\nID or password is incorrect. Please try again." << endl;
         goto login;
     }
     return *user; // will not be executed
@@ -1040,7 +1039,7 @@ void teacherMenu(User user)
                     getline(cin, answer);
                     toLowerCase(answer);
                     bool approve = (answer == "y" || answer == "yes");
-
+                    cout << boolalpha << approve << endl;
                     if (approve)
                     {
                         exam.removeFromFile();
@@ -1125,13 +1124,11 @@ void studentMenu(User user)
 
 int main()
 {
-
 authProcess:
     // User user = User::loadUsers().at(0); // FOR TESTING PURPOSE ONLY
     User user = performAuth();
-
-    cout << "User role is: " << user.Role() << "\n";
-
+    cout << endl;
+    
     if (user.Role() == TEACHER)
     {
         teacherMenu(user);

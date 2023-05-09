@@ -6,8 +6,10 @@ using namespace std;
 
 #if defined _WIN32
 #include <conio.h>
-void getPassword(char password[MAX_PASSWORD_LENGTH + 1])
+void getPassword()
 {
+    char password[MAX_PASSWORD_LENGTH + 1];
+
     int length = 0;
     cout << "Enter password: ";
     char ch;
@@ -32,15 +34,16 @@ void getPassword(char password[MAX_PASSWORD_LENGTH + 1])
         }
     }
     password[length] = '\0'; // add the null terminator
-    cout << endl
-         << "Password entered: " << password << endl;
+
+    return (string)password
 }
 #elif defined(__LINUX__) || defined(__gnu_linux__) || defined(__linux__) || defined(__APPLE__)
 #include <termios.h>
 #include <unistd.h>
 
-void getPassword(char password[MAX_PASSWORD_LENGTH + 1])
+string getPassword()
 {
+    char password[MAX_PASSWORD_LENGTH + 1];
     int length = 0;
     cout << "Enter password: ";
     struct termios oldt, newt;
@@ -70,8 +73,9 @@ void getPassword(char password[MAX_PASSWORD_LENGTH + 1])
         }
     }
     password[length] = '\0';
-    cout << endl
-         << "Password entered: " << password << endl;
+
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+
+    return (string)password;
 }
 #endif
