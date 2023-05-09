@@ -2,6 +2,8 @@
 #include <string.h>
 #define MAX_PASSWORD_LENGTH 20
 
+#include "banners.h"
+
 using namespace std;
 
 #if defined _WIN32
@@ -11,7 +13,7 @@ string getPassword()
     char password[MAX_PASSWORD_LENGTH + 1];
 
     int length = 0;
-    cout << "Enter password: ";
+    cout << WHITE << BG_BLUE << "Enter password: " << RESET << " ";
     char ch;
     while ((ch = getch()) != '\r')
     {
@@ -45,7 +47,7 @@ string getPassword()
 {
     char password[MAX_PASSWORD_LENGTH + 1];
     int length = 0;
-    cout << "Enter password: ";
+    cout << WHITE << BG_BLUE << "Enter password: " << RESET << " ";
     struct termios oldt, newt;
     tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt;
