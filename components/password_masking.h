@@ -13,7 +13,7 @@ string getPassword()
     char password[MAX_PASSWORD_LENGTH + 1];
 
     int length = 0;
-    cout << WHITE << BG_BLUE << "Enter password: " << RESET << " ";
+    cout << WHITE << BG_BLUE << "Enter password:" << RESET << " ";
     char ch;
     while ((ch = getch()) != '\r')
     {
