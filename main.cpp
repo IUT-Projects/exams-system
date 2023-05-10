@@ -689,7 +689,7 @@ void Exam::start(User user)
 
     for (Result result : Result::loadResultsByExam(*this))
     {
-        if (result.getUserId() == user.getID())
+        if (result.getUserId() == user.getID() && user.Role() != TEACHER)
         {
             cout << BG_RED << WHITE << "You already participated to this exam!" << RESET << endl;
             return;
@@ -1155,72 +1155,92 @@ void teacherMenu(User user)
                 cout << "There are no exams!\n";
             }
         }
-        else if(option == 3)
+        else if (option == 3)
         {
-            User new_student;
-            string name, default_password = "dddddd";
-            cout << "Enter student's name: ";
-            cin >> name;
-            new_student.setData(name, STUDENT, default_password);
-            User::addUser(new_student);
-            cout << GREEN << "Student is added!" << RESET << endl;
+            User newStudent;
+            string name, role, password;
+            cin.ignore();
+            cout << BG_BLUE << WHITE << "Student Name: " << RESET << " ";
+
+            getline(cin, name);
+
+            password = getPassword();
+            newStudent.setData(name, STUDENT, password);
+            User::addUser(newStudent);
+            cout << GREEN << "\nNew student is added!" << RESET << endl;
         }
         else if (option == 4)
         {
             int index = 0;
-            vector <User> myStudents = User::loadUsers();
-            myStudents.erase(remove_if(myStudents.begin(), myStudents.end(),
-                                       [](User u)
-                                       {return u.Role() != STUDENT;}), myStudents.end());
-            cout << BG_MAGENTA << WHITE  << "[ MY Students ]\n"
+            vector<User> myStudents = User::loadUsers();
+            auto filter_by_role = [](User u)
+            { return u.Role() != STUDENT; };
+            myStudents.erase(
+                remove_if(
+                    myStudents.begin(),
+                    myStudents.end(),
+                    filter_by_role),
+                myStudents.end());
+
+            cout << BG_MAGENTA << WHITE << "[ MY Students ]\n"
                  << RESET;
-            if(myStudents.size()) {
-                for (int index = 0; index < myStudents.size(); index++) {
+
+            if (myStudents.size())
+            {
+                for (int index = 0; index < myStudents.size(); index++)
+                {
                     cout << BG_YELLOW << BLACK << index + 1 << "." << RESET << " " << myStudents.at(index).Name() << endl;
                 }
                 cout << "\n";
                 integerInput("Select a student ", option);
-            }
-            if (1 <= option && option <= myStudents.size())
-            {
-                User student = myStudents.at(option - 1);
+
+                if (1 <= option && option <= myStudents.size())
+                {
+                    User student = myStudents.at(option - 1);
 
                 selectOption:
-                cout << GREEN << "\n[ ACTIONS ]\n";
-                cout << WHITE << BG_BLUE << "1." << RESET << " Student info" << endl;
-                cout << WHITE << BG_BLUE << "2." << RESET << " Student result" << endl;
-                cout << WHITE << BG_BLUE << "3." << RESET << " Remove student" << endl;
-                cout << "(other). Back" << endl;
-                integerInput("Your Option ", option);
+                    cout << GREEN << "\n[ ACTIONS ]\n";
+                    cout << WHITE << BG_BLUE << "1." << RESET << " Student info" << endl;
+                    cout << WHITE << BG_BLUE << "2." << RESET << " Student result" << endl;
+                    cout << WHITE << BG_BLUE << "3." << RESET << " Remove student" << endl;
+                    cout << "(other). Back" << endl;
+                    integerInput("Your Option ", option);
 
-                if (option == 1)
-                {
-                    student.display();
-                    goto selectOption;
-                }
-                if (option == 2)
-                {
-                    vector <Result> results = Result::loadResultsByUser(student);
-                    if (results.size() == 0)
+                    if (option == 1)
                     {
-                        clear();
-                        cout << "Results not found :(" << endl;
+                        student.display();
+                        goto selectOption;
                     }
+                    if (option == 2)
+                    {
+                        vector<Result> results = Result::loadResultsByUser(student);
+                        if (results.size() == 0)
+                        {
+                            clear();
+                            cout << "Results not found :(" << endl;
+                        }
+                        else
+                        {
+                            clear();
+                            displayResults(results);
+                        }
+                        goto selectOption;
+                    }
+                    if (option == 3)
+                    {
+                        if (confirm())
+                        {
+                            student._delete();
+                        }
+                    }
+
                     else
                     {
-                        clear();
-                        displayResults(results);
-                    }
-                    goto selectOption;
-                }
-                if (option == 3)
-                {
-                    if (confirm())
-                    {
-                        student._delete();
+                        cout << RED << "Wrong input!" << endl;
                     }
                 }
             }
+
             else
             {
                 cout << "There are no students!\n";
