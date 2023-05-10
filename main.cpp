@@ -284,13 +284,15 @@ void User::_delete()
 
     for (User user : users)
     {
-        if (user.ID != this->ID)
-        {
-            User::addUser(user);
-        }
-        else
-        {
-            Result::removeFromFile(this->ID);
+        if (user.Role() != ADMIN) {
+            if (user.ID != this->ID)
+            {
+                User::addUser(user);
+            }
+            else
+            {
+                Result::removeFromFile(this->ID);
+            }
         }
     }
 }
