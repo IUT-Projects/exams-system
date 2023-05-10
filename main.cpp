@@ -1318,7 +1318,7 @@ void studentMenu(User user)
             {
                 Exam exam = result.getExam();
 
-                cout << "Exam: " << GREEN << exam.getTitle() << RESET << ", score: " << BG_BLUE << result.getTotalScore() << "/" << exam.getTotalNumberOfQuestions() << RESET << endl;
+                cout << "Exam: " << GREEN << exam.getTitle() << RESET << ", score: " << BG_BLUE << result.getTotalScore() << "/" << exam.getTotalNumberOfQuestions() << RESET << ", "<< BG_MAGENTA << ((float) result.getTotalScore())/ ((float) exam.getTotalNumberOfQuestions()) * 100.0 << "%" <<RESET << endl;
             }
         }
         else if (option == 3)
