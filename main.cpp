@@ -300,7 +300,8 @@ void User::_delete(bool for_update)
             {
                 User::addUser(user);
             }
-            if (! for_update) {
+            if (!for_update)
+            {
                 Result::removeFromFile(this->ID);
             }
         }
@@ -1318,6 +1319,7 @@ void studentMenu(User user)
             for (Exam exam : exams)
             {
                 cout << BG_BLUE << counter << "." << RESET << " " << exam.getTitle() << ", total: " << exam.getTotalNumberOfQuestions() << " questions\n";
+                counter++;
             }
 
             integerInput("Select the exam to start", option);
