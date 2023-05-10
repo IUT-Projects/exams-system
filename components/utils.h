@@ -131,3 +131,19 @@ bool confirm()
 
     return (answer == "y" || answer == "yes");
 }
+
+
+
+
+
+pair<int, int> secondsToMinutes(int totalSeconds) {
+    pair<int, int> time;
+
+    int minutes = totalSeconds / 60;
+    int seconds = totalSeconds % 60;
+
+    time.first = minutes;
+    time.second = seconds;
+
+    return time;
+}

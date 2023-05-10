@@ -2,6 +2,8 @@
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+#include <chrono>
+
 // constants
 #define DEFAULT_VARIANTS_NUMBER 3
 #define MAX_USER_ANSWER_LENGTH 128
@@ -209,7 +211,7 @@ public:
     void includeMultipleChoiceQuestion(MultipleChoice question);
     void includeShortAnswerQuestion(ShortAnswerQuestion question);
     int getTotalNumberOfQuestions();
-    void displayResults(Result result, vector<pair<string, bool>> stats);
+    void displayResults(Result result, vector<pair<string, bool>> stats, int elapsed);
     string getTitle();
     User getAuthor();
 
@@ -712,6 +714,9 @@ void Exam::start(User user)
 
     pair<string, bool> temp_pair;
 
+    // beginning time
+    chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
     for (MultipleChoice question : multi_questions)
     {
         question.start(result);
@@ -728,8 +733,13 @@ void Exam::start(User user)
         temp_pair.second = question.checkAnswer();
         stats.push_back(temp_pair);
     }
+    // when finished
+    chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
-    this->displayResults(result, stats);
+    int elapsed = chrono::duration_cast<std::chrono::seconds>(end - begin).count();
+
+
+    this->displayResults(result, stats, elapsed);
     result.writeToFile();
 }
 
@@ -933,8 +943,10 @@ vector<Exam> Exam::loadExams()
     return exams;
 }
 
-void Exam::displayResults(Result result, vector<pair<string, bool>> stats)
+void Exam::displayResults(Result result, vector<pair<string, bool>> stats, int elapsed)
 {
+    pair<int, int> time = secondsToMinutes(elapsed);
+
     cout << endl
          << BOLDGREEN << setw(25) << "[ SUMMARY ]" << RESET << setw(25) << endl;
 
@@ -945,6 +957,9 @@ void Exam::displayResults(Result result, vector<pair<string, bool>> stats)
         string COLOR = (stat.second) ? GREEN : RED;
         cout << "Question: " << stat.first << ", your answer is " << COLOR << boolalpha << stat.second << RESET << endl;
     }
+    
+    cout << "Total time spent: " << BOLDBLUE << time.first << " minutes " << time.second << " seconds" << RESET << endl;
+
     cout << endl
          << endl;
 }
