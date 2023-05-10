@@ -1256,7 +1256,9 @@ void studentMenu(User user)
              << "\n";
         cout << BG_BLUE << "3." << RESET << " User info"
              << "\n";
-        cout << BG_BLUE << "4." << RESET << " Quit"
+        cout << BG_BLUE << "4." << RESET << " Update password"
+             << "\n";
+        cout << BG_BLUE << "5." << RESET << " Quit"
              << "\n";
         integerInput("Your option", option);
         clear();
@@ -1304,6 +1306,15 @@ void studentMenu(User user)
             user.display();
         }
         else if (option == 4)
+        {
+            string new_password;
+            cout << "Enter new password: ";
+            cin >> new_password;
+
+            user.updatePassword(new_password);
+            cout << GREEN << "Password is updated!" << RESET << endl;
+        }
+        else if (option == 5)
         {
             quit();
         }
