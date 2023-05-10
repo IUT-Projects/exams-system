@@ -113,7 +113,7 @@ public:
 
     void display();
     void writeToFile();
-    void removeFromFile();
+    static void removeFromFile(string ID);
     static vector<Result> loadResults();
     static vector<Result> loadResultsByExam(Exam exam);
     static vector<Result> loadResultsByUser(User user);
@@ -288,6 +288,10 @@ void User::_delete()
         {
             User::addUser(user);
         }
+        else
+        {
+            Result::removeFromFile(this->ID);
+        }
     }
 }
 void User::setData(string name, string role, string password, string ID = "")
@@ -344,23 +348,6 @@ void Result::writeToFile()
     file << exam_id << "|" << user_id << "|" << total_score << "|" << max_possible_score << "\n";
 
     file.close();
-}
-
-void Result::removeFromFile()
-{
-    vector<Result> results = Result::loadResults();
-
-    ofstream file;
-    file.open(RESULTS_DATA_PATH, ios::out | ios::trunc);
-    file.close();
-
-    for (Result result : results)
-    {
-        if (result.getUserId() != this->user_id)
-        {
-            result.writeToFile();
-        }
-    }
 }
 
 vector<Result> Result::loadResults()
@@ -446,6 +433,22 @@ void displayResults(vector<Result> results)
         counter++;
     }
     cout << "\n\n";
+}
+
+void Result::removeFromFile(string ID)
+{
+    vector<Result> results = Result::loadResults();
+
+    ofstream file;
+    file.open(RESULTS_DATA_PATH, ios::out | ios::trunc);
+    file.close();
+    for (Result result : results)
+    {
+        if (result.getUserId() != ID && result.getExamId() != ID)
+        {
+            result.writeToFile();
+        }
+    }
 }
 
 // QUESTIONS
@@ -660,7 +663,7 @@ void MultipleChoice::showVariants()
     char option = 'A';
     for (string variant : variants)
     {
-        cout << option << ")" << variant << "\n";
+        cout << option << ") " << variant << "\n";
         option++;
     }
 }
@@ -779,12 +782,9 @@ void Exam::removeFromFile()
 {
     // load all data before deleting
     vector<Exam> exams = Exam::loadExams();
-    vector<Result> results = Result::loadResults();
 
     ofstream file;
     file.open(EXAMS_DATA_PATH, ios::out | ios::trunc);
-    file.close();
-    file.open(RESULTS_DATA_PATH, ios::out | ios::trunc);
     file.close();
 
     for (Exam exam : exams)
@@ -793,19 +793,15 @@ void Exam::removeFromFile()
         {
             exam.writeToFile();
         }
-    }
-
-    for (Result result : results)
-    {
-        if (result.getExamId() != this->ID)
+        else
         {
-            result.writeToFile();
+            Result::removeFromFile(this->ID);
         }
     }
 }
 string Exam::createExamID()
 {
-    // Add E latter at the beginning of random string
+    // Add E letter at the beginning of random string
     return generateRandomIDwithPrefix('E');
 }
 
@@ -1092,7 +1088,7 @@ void teacherMenu(User user)
                 {
                     cout << BG_YELLOW << BLACK << index + 1 << "." << RESET << " " << myExams.at(index).getTitle() << endl;
                 }
-                integerInput("Select the exam", option);
+                integerInput("Select an exam", option);
             }
 
             // check user input range
@@ -1167,6 +1163,7 @@ void teacherMenu(User user)
             cin >> name;
             new_student.setData(name, STUDENT, default_password);
             User::addUser(new_student);
+            cout << GREEN << "Student is added!" << RESET << endl;
         }
         else if (option == 4)
         {
@@ -1182,12 +1179,11 @@ void teacherMenu(User user)
                     cout << BG_YELLOW << BLACK << index + 1 << "." << RESET << " " << myStudents.at(index).Name() << endl;
                 }
                 cout << "\n";
-                integerInput("Select student ", option);
+                integerInput("Select a student ", option);
             }
             if (1 <= option && option <= myStudents.size())
             {
                 User student = myStudents.at(option - 1);
-                vector <Result> results = Result::loadResultsByUser(student);
 
                 selectOption:
                 cout << GREEN << "\n[ ACTIONS ]\n";
@@ -1204,6 +1200,7 @@ void teacherMenu(User user)
                 }
                 if (option == 2)
                 {
+                    vector <Result> results = Result::loadResultsByUser(student);
                     if (results.size() == 0)
                     {
                         clear();
@@ -1221,9 +1218,6 @@ void teacherMenu(User user)
                     if (confirm())
                     {
                         student._delete();
-                        for (Result result : results) {
-                            result.removeFromFile();
-                        }
                     }
                 }
             }
@@ -1355,7 +1349,7 @@ void adminMenu(User user)
                 cout << "2. Update user password" << endl;
                 cout << "3. Delete user" << endl;
 
-                integerInput("Select the action", option);
+                integerInput("Select an action", option);
                 if (option == 1)
                 {
                     currentUser.display();
