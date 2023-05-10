@@ -1335,7 +1335,7 @@ void studentMenu(User user)
             cin >> new_password;
 
             user.updatePassword(new_password);
-            cout << GREEN << "Password is updated!" << RESET << endl;
+            cout << GREEN << "Password has been updated!" << RESET << endl;
         }
         else if (option == 5)
         {
