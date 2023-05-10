@@ -1,3 +1,12 @@
+/*
+Exams System (not Epam Systems)
+
+1. U2210263 - Zak Mark
+2. U2210264 - Zayniyev Sanjar
+3. U2210265 - Ziyodov Abduaziz
+4. U2210273 - Azimov Mirvohid
+*/
+
 // imports
 #include <fstream>
 #include <iomanip>
