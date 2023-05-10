@@ -1132,6 +1132,7 @@ void teacherMenu(User user)
                 {
                     // Test your exam
                     clear();
+                    Result::removeFromFile(user.getID());
                     exam.start(user);
                     goto selectAction;
                 }
