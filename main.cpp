@@ -68,7 +68,7 @@ public:
     friend void adminMenu(User user);
 
     void updatePassword(string new_password);
-    void _delete();
+    void _delete(bool for_update);
 };
 
 class Result
@@ -79,7 +79,7 @@ class Result
     */
 private:
     string exam_id, user_id;
-    int total_score{0}, max_possible_score;
+    int total_score{0}, max_possible_score, time_spent;
 
 public:
     Result(){};
@@ -101,6 +101,14 @@ public:
     void setMaxPossibleScore(int score)
     {
         this->max_possible_score = score;
+    }
+    void setTimeSpent(int elapsed)
+    {
+        this->time_spent = elapsed; // in seconds
+    }
+    pair<int, int> getTimeSpent()
+    {
+        return secondsToMinutes(this->time_spent);
     }
 
     string getUserId()
@@ -240,7 +248,7 @@ void User::display()
 }
 void User::updatePassword(string new_password)
 {
-    this->_delete();
+    this->_delete(true);
     this->password = new_password;
     User::addUser(*this);
 }
@@ -275,7 +283,7 @@ void User::addUser(User user)
     file.close();
 }
 
-void User::_delete()
+void User::_delete(bool for_update)
 {
     // load all data before deleting
     vector<User> users = User::loadUsers();
@@ -292,8 +300,7 @@ void User::_delete()
             {
                 User::addUser(user);
             }
-            else
-            {
+            if (! for_update) {
                 Result::removeFromFile(this->ID);
             }
         }
@@ -350,7 +357,7 @@ void Result::writeToFile()
     fstream file;
     file.open(RESULTS_DATA_PATH, ios::app);
 
-    file << exam_id << "|" << user_id << "|" << total_score << "|" << max_possible_score << "\n";
+    file << exam_id << "|" << user_id << "|" << total_score << "|" << max_possible_score << "|" << time_spent << "\n";
 
     file.close();
 }
@@ -375,6 +382,8 @@ vector<Result> Result::loadResults()
         Result result(result_data[0], result_data[1]);
         result.setTotalScore(stoi(result_data[2]));
         result.setMaxPossibleScore(stoi(result_data[3]));
+        result.setTimeSpent(stoi(result_data[4]));
+
         results.push_back(result); // add to results
     }
     file.close();
@@ -429,12 +438,13 @@ void displayResults(vector<Result> results)
 {
 
     cout << BOLDBLUE << "\n[ RESULTS ]\n";
-    cout << GREEN << "№ \tUser ID\t  Score" << RESET << endl;
+    cout << GREEN << "№ \tUser_ID\t  Score\t Duration" << RESET << endl;
 
     int counter{1};
     for (Result result : results)
     {
-        cout << BG_BLUE << counter << "." << RESET << "\t" << result.getUserId() << "    " << result.getTotalScore() << endl;
+        pair<int, int> time = result.getTimeSpent();
+        cout << BG_BLUE << counter << "." << RESET << "\t" << result.getUserId() << "   " << result.getTotalScore() << "/" << result.getExam().getTotalNumberOfQuestions() << "   " << time.first << "mins " << time.second << " secs" << endl;
         counter++;
     }
     cout << "\n\n";
@@ -737,8 +747,7 @@ void Exam::start(User user)
     chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
     int elapsed = chrono::duration_cast<std::chrono::seconds>(end - begin).count();
-
-
+    result.setTimeSpent(elapsed);
     this->displayResults(result, stats, elapsed);
     result.writeToFile();
 }
@@ -957,7 +966,7 @@ void Exam::displayResults(Result result, vector<pair<string, bool>> stats, int e
         string COLOR = (stat.second) ? GREEN : RED;
         cout << "Question: " << stat.first << ", your answer is " << COLOR << boolalpha << stat.second << RESET << endl;
     }
-    
+
     cout << "Total time spent: " << BOLDBLUE << time.first << " minutes " << time.second << " seconds" << RESET << endl;
 
     cout << endl
@@ -1246,7 +1255,7 @@ void teacherMenu(User user)
                     {
                         if (confirm())
                         {
-                            student._delete();
+                            student._delete(false);
                         }
                     }
 
@@ -1333,8 +1342,8 @@ void studentMenu(User user)
             for (Result result : Result::loadResultsByUser(user))
             {
                 Exam exam = result.getExam();
-
-                cout << "Exam: " << GREEN << exam.getTitle() << RESET << ", score: " << BG_BLUE << result.getTotalScore() << "/" << exam.getTotalNumberOfQuestions() << RESET << ", " << BG_MAGENTA << ((float)result.getTotalScore()) / ((float)exam.getTotalNumberOfQuestions()) * 100.0 << "%" << RESET << endl;
+                pair<int, int> time = result.getTimeSpent();
+                cout << "Exam: " << GREEN << exam.getTitle() << RESET << ", score: " << BG_BLUE << result.getTotalScore() << "/" << exam.getTotalNumberOfQuestions() << RESET << " " << BG_MAGENTA << "(" << ((float)result.getTotalScore()) / ((float)exam.getTotalNumberOfQuestions()) * 100.0 << "%)" << RESET << ", time spent: " << BOLDCYAN << time.first << " mins " << time.second << " secs" << RESET << endl;
             }
         }
         else if (option == 3)
@@ -1414,7 +1423,7 @@ void adminMenu(User user)
                 {
                     if (confirm())
                     {
-                        currentUser._delete();
+                        currentUser._delete(false);
                     }
                 }
             }
