@@ -284,7 +284,8 @@ void User::_delete()
 
     for (User user : users)
     {
-        if (user.Role() != ADMIN) {
+        if (user.Role() != ADMIN)
+        {
             if (user.ID != this->ID)
             {
                 User::addUser(user);
@@ -425,13 +426,13 @@ vector<Result> Result::loadResultsByUser(User user)
 void displayResults(vector<Result> results)
 {
 
-    cout << "\n[ RESULTS ]\n";
-    cout << "№ \tUser ID\t  Score" << endl;
+    cout << BOLDBLUE << "\n[ RESULTS ]\n";
+    cout << GREEN << "№ \tUser ID\t  Score" << RESET << endl;
 
     int counter{1};
     for (Result result : results)
     {
-        cout << counter << ".\t" << result.getUserId() << "    " << result.getTotalScore() << endl;
+        cout << BG_BLUE << counter << "." << RESET << "\t" << result.getUserId() << "    " << result.getTotalScore() << endl;
         counter++;
     }
     cout << "\n\n";
@@ -935,12 +936,9 @@ vector<Exam> Exam::loadExams()
 void Exam::displayResults(Result result, vector<pair<string, bool>> stats)
 {
     cout << endl
-         << BOLDGREEN << setw(25) << "[ RESULTS ]" << RESET << setw(25) << endl;
+         << BOLDGREEN << setw(25) << "[ SUMMARY ]" << RESET << setw(25) << endl;
 
     cout << "Total score: " << result.getTotalScore() << "/" << this->getTotalNumberOfQuestions() << endl;
-
-    cout << WHITE << BG_BLUE << "Summary:" << endl
-         << RESET;
 
     for (pair<string, bool> stat : stats)
     {
@@ -1220,7 +1218,7 @@ void teacherMenu(User user)
                         if (results.size() == 0)
                         {
                             clear();
-                            cout << "Results not found :(" << endl;
+                            cout << YELLOW << "Results not found :(" << RESET << endl;
                         }
                         else
                         {
@@ -1321,7 +1319,7 @@ void studentMenu(User user)
             {
                 Exam exam = result.getExam();
 
-                cout << "Exam: " << GREEN << exam.getTitle() << RESET << ", score: " << BG_BLUE << result.getTotalScore() << "/" << exam.getTotalNumberOfQuestions() << RESET << ", "<< BG_MAGENTA << ((float) result.getTotalScore())/ ((float) exam.getTotalNumberOfQuestions()) * 100.0 << "%" <<RESET << endl;
+                cout << "Exam: " << GREEN << exam.getTitle() << RESET << ", score: " << BG_BLUE << result.getTotalScore() << "/" << exam.getTotalNumberOfQuestions() << RESET << ", " << BG_MAGENTA << ((float)result.getTotalScore()) / ((float)exam.getTotalNumberOfQuestions()) * 100.0 << "%" << RESET << endl;
             }
         }
         else if (option == 3)
