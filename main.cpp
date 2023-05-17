@@ -257,7 +257,6 @@ class Feedback
 public:
     Feedback(string _user_id, string _exam_id, string _content) : user_id(_user_id), exam_id(_exam_id), content(_content) {}
 
-
     string ExamID();
     string UserID();
     string Content();
@@ -323,7 +322,8 @@ string Feedback::Content()
 
 void Feedback::input()
 {
-    cout << BG_GREEN << "Leave your feedback: " << RESET;
+    cout << endl
+         << BG_GREEN << "Leave your feedback: " << RESET;
     getline(cin, this->content);
 }
 void Feedback::display()

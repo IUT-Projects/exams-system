@@ -1,0 +1,2 @@
+E-XPC63ERl|Designer of C++ language|2|3|Charles Babbage|Dennis Ritchie|Arnold Schwarznegger
+E-XPC63ERl|Identify the C++ compiler for Linux|1|3|cpp|g++|vc++
