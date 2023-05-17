@@ -19,9 +19,9 @@ Exams System (not Epam Systems)
 #define USER_DATA_PATH "./data/users.txt"
 #define EXAMS_DATA_PATH "./data/exams.txt"
 #define RESULTS_DATA_PATH "./data/results.txt"
+#define FEEDBACKS_DATA_PATH "./data/feedbacks.txt"
 #define MULTI_CHOICE_QUESTIONS_DATA_PATH "./data/questions/multi.txt"
 #define SHORT_ANSWER_QUESTIONS_DATA_PATH "./data/questions/short.txt"
-
 #include "components/utils.h"
 #include "components/password_masking.h"
 
@@ -235,6 +235,10 @@ public:
     // For file operations
     void setTitle(string title);
     void setID(string ID);
+    string getID()
+    {
+        return ID;
+    }
     void getAuthorFromFile(string author_id);
     void loadQuestions();
 
@@ -245,6 +249,87 @@ public:
 
     friend class Result;
 };
+
+class Feedback
+{
+    string user_id, exam_id, content{"  "};
+
+public:
+    Feedback(string _user_id, string _exam_id, string _content) : user_id(_user_id), exam_id(_exam_id), content(_content) {}
+
+
+    string ExamID();
+    string UserID();
+    string Content();
+
+    void input();
+    void display();
+
+    void writeToFile();
+    static void loadFeedbacks(string exam_id);
+};
+
+// FEEDBACK
+
+void Feedback::writeToFile()
+{
+    fstream file;
+    file.open(FEEDBACKS_DATA_PATH, ios::app);
+
+    file << user_id << "|" << exam_id << "|" << content << "\n";
+
+    file.close();
+}
+
+void Feedback::loadFeedbacks(string exam_id)
+{
+    clear();
+    string line;
+    fstream file;
+    file.open(FEEDBACKS_DATA_PATH, ios::in);
+
+    vector<Feedback> feedbacks;
+
+    cout << BLUE << "[ Feedbacks ]" << RESET << endl;
+    while (getline(file, line))
+    {
+        vector<string> feedback_data = split(line, "|");
+        Feedback feedback(
+            feedback_data[0],
+            feedback_data[1],
+            feedback_data[2]);
+        if (feedback.ExamID() == exam_id)
+        {
+            feedback.display();
+        }
+    }
+    file.close();
+}
+
+string Feedback::ExamID()
+{
+    return this->exam_id;
+}
+
+string Feedback::UserID()
+{
+    return this->user_id;
+}
+
+string Feedback::Content()
+{
+    return this->content;
+}
+
+void Feedback::input()
+{
+    cout << BG_GREEN << "Leave your feedback: " << RESET;
+    getline(cin, this->content);
+}
+void Feedback::display()
+{
+    cout << YELLOW << "Feedback by " << RESET << user_id << MAGENTA << " for " << RESET << exam_id << ": " << GREEN << content << endl;
+}
 
 // USER
 
@@ -756,6 +841,11 @@ void Exam::start(User user)
     // when finished
     chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
+    Feedback feedback(user.getID(), this->ID, "");
+
+    feedback.input();
+    feedback.writeToFile();
+
     int elapsed = chrono::duration_cast<std::chrono::seconds>(end - begin).count();
     result.setTimeSpent(elapsed);
     this->displayResults(result, stats, elapsed);
@@ -1139,6 +1229,7 @@ void teacherMenu(User user)
                 cout << WHITE << BG_BLUE << "2." << RESET << " Test examination process" << endl;
                 cout << WHITE << BG_BLUE << "3." << RESET << " Delete Exam" << endl;
                 cout << WHITE << BG_BLUE << "4." << RESET << " Exam info" << endl;
+                cout << WHITE << BG_BLUE << "5." << RESET << " Feedbacks" << endl;
                 cout << "(other). Back" << endl;
                 integerInput("Your Option ", option);
 
@@ -1183,6 +1274,10 @@ void teacherMenu(User user)
                     clear();
                     exam.info();
                     goto selectAction;
+                }
+                else if (option == 5)
+                {
+                    Feedback::loadFeedbacks(exam.getID());
                 }
             }
             else
