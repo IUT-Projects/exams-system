@@ -533,7 +533,7 @@ void displayResults(vector<Result> results)
 {
 
     cout << BOLDBLUE << "\n[ RESULTS ]\n";
-    cout << GREEN << "№ \tUser_ID\t  Score\t Duration" << RESET << endl;
+    cout << GREEN << "No \tUser_ID\t  Score\t Duration" << RESET << endl;
 
     int counter{1};
     for (Result result : results)
@@ -1494,7 +1494,7 @@ void adminMenu(User user)
             clear();
             vector<User> users = User::loadUsers();
             int counter{1};
-            cout << "\n[ USERS ]\n№  ID\t\tName\tRole" << endl;
+            cout << "\n[ USERS ]\nNo  ID\t\tName\tRole" << endl;
             for (User user : User::loadUsers())
             {
                 cout << GREEN << counter << ". " << BLUE << user.ID << RESET << " | " << MAGENTA << user.name << RESET << " | " << CYAN << user.role << RESET << endl;
@@ -1554,6 +1554,7 @@ void adminMenu(User user)
 
 int main()
 {
+    clear();
 authProcess:
     User user = performAuth();
     cout << endl;
